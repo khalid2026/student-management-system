@@ -1,0 +1,5 @@
+cd /Users/khalidawadh/Documents/augment-projects/mikrotik/student-management-system
+
+git remote add origin https://github.com/[اسم-المستخدم]/khalidsoft-student-management.git
+git branch -M main
+git push -u origin main
