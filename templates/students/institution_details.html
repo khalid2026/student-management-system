@@ -1,0 +1,277 @@
+{% extends "students/base.html" %}
+
+{% block title %}{{ translate('institutions') }} - {{ institution.name_ar }} - {{ translate('app_title') }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-university me-2"></i>
+                        {{ institution.name_ar }}
+                        {% if institution.name_en %}
+                            <small class="text-light">({{ institution.name_en }})</small>
+                        {% endif %}
+                    </h4>
+                    <div>
+                        <a href="{{ url_for('edit_institution', institution_id=institution.id) }}" 
+                           class="btn btn-warning btn-sm me-2">
+                            <i class="fas fa-edit me-1"></i>
+                            {{ translate('edit') }}
+                        </a>
+                        <a href="{{ url_for('institutions') }}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>
+                            {{ translate('back') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- معلومات المؤسسة -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        {% if current_language == 'ar' %}معلومات المؤسسة{% else %}Institution Information{% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="institution-info">
+                        <div class="info-item">
+                            <strong>{{ translate('institution') }}:</strong>
+                            <span>{{ institution.name_ar }}</span>
+                        </div>
+                        {% if institution.name_en %}
+                        <div class="info-item">
+                            <strong>{% if current_language == 'ar' %}الاسم الإنجليزي:{% else %}English Name:{% endif %}</strong>
+                            <span>{{ institution.name_en }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="info-item">
+                            <strong>{% if current_language == 'ar' %}النوع:{% else %}Type:{% endif %}</strong>
+                            <span class="badge bg-primary">{{ institution.type }}</span>
+                        </div>
+                        {% if institution.city %}
+                        <div class="info-item">
+                            <strong>{% if current_language == 'ar' %}المدينة:{% else %}City:{% endif %}</strong>
+                            <span>{{ institution.city }}</span>
+                        </div>
+                        {% endif %}
+                        {% if institution.country %}
+                        <div class="info-item">
+                            <strong>{% if current_language == 'ar' %}البلد:{% else %}Country:{% endif %}</strong>
+                            <span>{{ institution.country }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="info-item">
+                            <strong>{% if current_language == 'ar' %}تاريخ الإضافة:{% else %}Added Date:{% endif %}</strong>
+                            <span>{{ institution.created_at.strftime('%Y-%m-%d') if institution.created_at else 'غير محدد' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- إحصائيات الطلاب -->
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        {{ translate('student_statistics') }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="stats-card">
+                                <div class="stats-number">{{ total_students }}</div>
+                                <div class="stats-label">
+                                    <i class="fas fa-users me-2"></i>
+                                    {{ translate('total_students') }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stats-card success">
+                                <div class="stats-number">{{ active_students }}</div>
+                                <div class="stats-label">
+                                    <i class="fas fa-user-check me-2"></i>
+                                    {{ translate('active_students') }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stats-card info">
+                                <div class="stats-number">{{ graduated_students }}</div>
+                                <div class="stats-label">
+                                    <i class="fas fa-graduation-cap me-2"></i>
+                                    {{ translate('graduated_students') }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stats-card warning">
+                                <div class="stats-number">{{ total_students - active_students - graduated_students }}</div>
+                                <div class="stats-label">
+                                    <i class="fas fa-user-times me-2"></i>
+                                    {% if current_language == 'ar' %}أخرى{% else %}Others{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- قائمة الطلاب -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        {% if current_language == 'ar' %}الطلاب المنتسبون ({{ total_students }}){% else %}Enrolled Students ({{ total_students }}){% endif %}
+                    </h5>
+                    <a href="{{ url_for('add_student') }}?institution_id={{ institution.id }}" 
+                       class="btn btn-primary btn-sm">
+                        <i class="fas fa-user-plus me-1"></i>
+                        {{ translate('add_student') }}
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if students %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>{{ translate('first_name_ar') }}</th>
+                                    <th>{{ translate('last_name_ar') }}</th>
+                                    <th>{{ translate('passport_number') }}</th>
+                                    <th>{{ translate('major') }}</th>
+                                    <th>{{ translate('status') }}</th>
+                                    <th>{{ translate('enrollment_date') }}</th>
+                                    <th>{% if current_language == 'ar' %}الإجراءات{% else %}Actions{% endif %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ student.first_name_ar }}</td>
+                                    <td>{{ student.last_name_ar }}</td>
+                                    <td>{{ student.passport_number }}</td>
+                                    <td>{{ student.major or 'غير محدد' }}</td>
+                                    <td>
+                                        {% if student.status == 'نشط' %}
+                                            <span class="badge bg-success">{{ student.status }}</span>
+                                        {% elif student.status == 'متخرج' %}
+                                            <span class="badge bg-info">{{ student.status }}</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">{{ student.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ student.enrollment_date.strftime('%Y-%m-%d') if student.enrollment_date else 'غير محدد' }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('student_details', student_id=student.id) }}" 
+                                               class="btn btn-info btn-sm" title="{{ translate('view') }}">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('edit_student', student_id=student.id) }}" 
+                                               class="btn btn-warning btn-sm" title="{{ translate('edit') }}">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">
+                            {% if current_language == 'ar' %}لا يوجد طلاب مسجلون في هذه المؤسسة{% else %}No students enrolled in this institution{% endif %}
+                        </h5>
+                        <a href="{{ url_for('add_student') }}?institution_id={{ institution.id }}" 
+                           class="btn btn-primary mt-3">
+                            <i class="fas fa-user-plus me-2"></i>
+                            {{ translate('add_student') }}
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.institution-info .info-item {
+    padding: 12px 0;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.institution-info .info-item:last-child {
+    border-bottom: none;
+}
+
+.institution-info .info-item strong {
+    color: var(--primary-color);
+    min-width: 120px;
+}
+
+.stats-card {
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.stats-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.stats-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.table th {
+    font-weight: 600;
+    border-top: none;
+}
+
+.btn-group .btn {
+    margin-right: 2px;
+}
+
+.card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: none;
+    border-radius: 15px;
+}
+
+.card-header {
+    border-radius: 15px 15px 0 0 !important;
+}
+</style>
+{% endblock %}

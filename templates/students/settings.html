@@ -1,0 +1,372 @@
+{% extends "students/base.html" %}
+
+{% block title %}{{ translate('settings') }} - {{ translate('app_title') }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>
+                        {{ translate('settings') }}
+                    </h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- إعدادات اللغة والمظهر -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-palette me-2"></i>
+                        إعدادات المظهر واللغة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <!-- إعدادات اللغة -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2">
+                                    <i class="fas fa-language me-2"></i>
+                                    {{ translate('language') }}
+                                </h6>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="language" class="form-label">اختر اللغة / Choose Language</label>
+                                <select class="form-control" id="language" name="language">
+                                    <option value="ar" {% if settings.language == 'ar' %}selected{% endif %}>
+                                        🇸🇦 العربية (Arabic)
+                                    </option>
+                                    <option value="en" {% if settings.language == 'en' %}selected{% endif %}>
+                                        🇺🇸 English (الإنجليزية)
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- إعدادات المظهر -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2">
+                                    <i class="fas fa-paint-brush me-2"></i>
+                                    {{ translate('theme') }}
+                                </h6>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="theme" class="form-label">نوع المظهر</label>
+                                <select class="form-control" id="theme" name="theme">
+                                    <option value="default" {% if settings.theme == 'default' %}selected{% endif %}>
+                                        الافتراضي (Default)
+                                    </option>
+                                    <option value="dark" {% if settings.theme == 'dark' %}selected{% endif %}>
+                                        المظهر الداكن (Dark Mode)
+                                    </option>
+                                    <option value="light" {% if settings.theme == 'light' %}selected{% endif %}>
+                                        المظهر الفاتح (Light Mode)
+                                    </option>
+                                    <option value="modern" {% if settings.theme == 'modern' %}selected{% endif %}>
+                                        عصري (Modern)
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="color_scheme" class="form-label">{{ translate('color_scheme') }}</label>
+                                <select class="form-control" id="color_scheme" name="color_scheme">
+                                    <option value="blue" {% if settings.color_scheme == 'blue' %}selected{% endif %}>
+                                        🔵 أزرق (Blue)
+                                    </option>
+                                    <option value="purple" {% if settings.color_scheme == 'purple' %}selected{% endif %}>
+                                        🟣 بنفسجي (Purple)
+                                    </option>
+                                    <option value="green" {% if settings.color_scheme == 'green' %}selected{% endif %}>
+                                        🟢 أخضر (Green)
+                                    </option>
+                                    <option value="red" {% if settings.color_scheme == 'red' %}selected{% endif %}>
+                                        🔴 أحمر (Red)
+                                    </option>
+                                    <option value="orange" {% if settings.color_scheme == 'orange' %}selected{% endif %}>
+                                        🟠 برتقالي (Orange)
+                                    </option>
+                                    <option value="teal" {% if settings.color_scheme == 'teal' %}selected{% endif %}>
+                                        🔷 تركوازي (Teal)
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- إعدادات النص -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2">
+                                    <i class="fas fa-font me-2"></i>
+                                    إعدادات النص
+                                </h6>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="font_size" class="form-label">حجم الخط</label>
+                                <select class="form-control" id="font_size" name="font_size">
+                                    <option value="small" {% if settings.font_size == 'small' %}selected{% endif %}>
+                                        صغير (Small)
+                                    </option>
+                                    <option value="medium" {% if settings.font_size == 'medium' %}selected{% endif %}>
+                                        متوسط (Medium)
+                                    </option>
+                                    <option value="large" {% if settings.font_size == 'large' %}selected{% endif %}>
+                                        كبير (Large)
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input" type="checkbox" id="sidebar_collapsed" 
+                                           name="sidebar_collapsed" {% if settings.sidebar_collapsed %}checked{% endif %}>
+                                    <label class="form-check-label" for="sidebar_collapsed">
+                                        إخفاء القائمة الجانبية افتراضياً
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- أزرار التحكم -->
+                        <div class="row">
+                            <div class="col-12 text-center">
+                                <button type="submit" class="btn btn-primary btn-lg me-3">
+                                    <i class="fas fa-save me-2"></i>
+                                    {{ translate('save') }}
+                                </button>
+                                <a href="{{ url_for('index') }}" class="btn btn-secondary btn-lg">
+                                    <i class="fas fa-times me-2"></i>
+                                    {{ translate('cancel') }}
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- معاينة المظهر -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-eye me-2"></i>
+                        معاينة المظهر
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="theme-preview" class="theme-preview">
+                        <div class="preview-header">
+                            <div class="preview-title">عنوان تجريبي</div>
+                            <div class="preview-buttons">
+                                <span class="preview-btn primary">زر أساسي</span>
+                                <span class="preview-btn secondary">زر ثانوي</span>
+                            </div>
+                        </div>
+                        <div class="preview-content">
+                            <p>هذا نص تجريبي لمعاينة المظهر المختار.</p>
+                            <div class="preview-stats">
+                                <div class="stat-item">
+                                    <div class="stat-number">123</div>
+                                    <div class="stat-label">إحصائية</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- معلومات الإعدادات الحالية -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        الإعدادات الحالية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="setting-item">
+                        <strong>اللغة:</strong> 
+                        {% if settings.language == 'ar' %}العربية{% else %}English{% endif %}
+                    </div>
+                    <div class="setting-item">
+                        <strong>المظهر:</strong> {{ settings.theme|title }}
+                    </div>
+                    <div class="setting-item">
+                        <strong>نظام الألوان:</strong> {{ settings.color_scheme|title }}
+                    </div>
+                    <div class="setting-item">
+                        <strong>حجم الخط:</strong> {{ settings.font_size|title }}
+                    </div>
+                    <div class="setting-item">
+                        <strong>آخر تحديث:</strong> 
+                        {{ settings.updated_at.strftime('%Y-%m-%d %H:%M') if settings.updated_at else 'غير محدد' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.theme-preview {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 15px;
+    background: #f8f9fa;
+}
+
+.preview-header {
+    margin-bottom: 15px;
+}
+
+.preview-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.preview-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.preview-btn {
+    padding: 8px 16px;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.preview-btn.primary {
+    background: var(--primary-color, #667eea);
+    color: white;
+}
+
+.preview-btn.secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.preview-content p {
+    margin-bottom: 15px;
+    color: #495057;
+}
+
+.preview-stats {
+    display: flex;
+    justify-content: center;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color, #667eea);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.setting-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.setting-item:last-child {
+    border-bottom: none;
+}
+
+/* ألوان ديناميكية */
+:root {
+    --primary-color: #667eea;
+}
+
+[data-color-scheme="purple"] {
+    --primary-color: #9f7aea;
+}
+
+[data-color-scheme="green"] {
+    --primary-color: #48bb78;
+}
+
+[data-color-scheme="red"] {
+    --primary-color: #f56565;
+}
+
+[data-color-scheme="orange"] {
+    --primary-color: #ed8936;
+}
+
+[data-color-scheme="teal"] {
+    --primary-color: #38b2ac;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// تحديث المعاينة عند تغيير الإعدادات
+document.addEventListener('DOMContentLoaded', function() {
+    const colorSchemeSelect = document.getElementById('color_scheme');
+    const themeSelect = document.getElementById('theme');
+    const fontSizeSelect = document.getElementById('font_size');
+    
+    function updatePreview() {
+        const colorScheme = colorSchemeSelect.value;
+        const theme = themeSelect.value;
+        const fontSize = fontSizeSelect.value;
+        
+        // تحديث نظام الألوان
+        document.documentElement.setAttribute('data-color-scheme', colorScheme);
+        
+        // تحديث حجم الخط
+        const preview = document.getElementById('theme-preview');
+        preview.className = `theme-preview font-${fontSize}`;
+        
+        // تحديث المظهر
+        if (theme === 'dark') {
+            preview.style.background = '#2d3748';
+            preview.style.color = '#e2e8f0';
+        } else {
+            preview.style.background = '#f8f9fa';
+            preview.style.color = '#495057';
+        }
+    }
+    
+    colorSchemeSelect.addEventListener('change', updatePreview);
+    themeSelect.addEventListener('change', updatePreview);
+    fontSizeSelect.addEventListener('change', updatePreview);
+    
+    // تطبيق الإعدادات الحالية
+    updatePreview();
+});
+</script>
+{% endblock %}

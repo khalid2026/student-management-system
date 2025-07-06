@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}المستخدمون - إدارة MikroTik{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-users me-2"></i>
+            المستخدمون المتصلون
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">قائمة المستخدمين النشطين</h5>
+                <div>
+                    <a href="{{ url_for('users_management_page') }}" class="btn btn-success btn-sm me-2">
+                        <i class="fas fa-users-cog me-1"></i>
+                        إدارة متقدمة
+                    </a>
+                    <button class="btn btn-primary btn-sm" onclick="refreshUsers()">
+                        <i class="fas fa-sync-alt me-1"></i>
+                        تحديث
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="users-table">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin me-2"></i>
+                        جاري تحميل المستخدمين...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    loadUsers();
+    
+    // تحديث كل دقيقة
+    setInterval(loadUsers, 60000);
+});
+
+function loadUsers() {
+    $.get('/api/active-users')
+        .done(function(response) {
+            if (response.success) {
+                displayUsers(response.data);
+            } else {
+                $('#users-table').html(`
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        خطأ في تحميل المستخدمين: ${response.error}
+                    </div>
+                `);
+            }
+        })
+        .fail(function() {
+            $('#users-table').html(`
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    فشل في الاتصال بالخادم
+                </div>
+            `);
+        });
+}
+
+function displayUsers(users) {
+    if (users.length === 0) {
+        $('#users-table').html(`
+            <div class="text-center py-4">
+                <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">لا يوجد مستخدمون متصلون حالياً</h5>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>اسم المستخدم</th>
+                        <th>عنوان IP</th>
+                        <th>نوع الاتصال</th>
+                        <th>وقت الاتصال</th>
+                        <th>الخدمة</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    users.forEach(function(user) {
+        const typeIcon = user.type === 'PPP' ? 'fas fa-link' : 'fas fa-wifi';
+        const typeClass = user.type === 'PPP' ? 'text-primary' : 'text-success';
+        
+        html += `
+            <tr>
+                <td>
+                    <i class="${typeIcon} ${typeClass} me-2"></i>
+                    <strong>${user.name}</strong>
+                </td>
+                <td>
+                    <code>${user.address}</code>
+                </td>
+                <td>
+                    <span class="badge bg-${user.type === 'PPP' ? 'primary' : 'success'}">
+                        ${user.type}
+                    </span>
+                </td>
+                <td>${user.uptime}</td>
+                <td>${user.service}</td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-3">
+            <small class="text-muted">
+                <i class="fas fa-info-circle me-1"></i>
+                إجمالي المستخدمين المتصلين: <strong>${users.length}</strong>
+            </small>
+        </div>
+    `;
+    
+    $('#users-table').html(html);
+}
+
+function refreshUsers() {
+    $('#users-table').html(`
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin me-2"></i>
+            جاري التحديث...
+        </div>
+    `);
+    loadUsers();
+}
+</script>
+{% endblock %}

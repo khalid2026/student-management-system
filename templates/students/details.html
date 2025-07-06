@@ -1,0 +1,581 @@
+{% extends "students/base.html" %}
+
+{% block title %}{{ student.full_name_ar }} - {{ translate('student_info') }} - {{ translate('app_title') }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user me-2"></i>
+                        {{ translate('student_info') }}: {{ student.full_name_ar }}
+                    </h4>
+                    <div>
+                        <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-warning">
+                            <i class="fas fa-edit me-2"></i>
+                            {{ translate('edit') }}
+                        </a>
+                        <a href="{{ url_for('view_students') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            العودة للقائمة
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- البيانات الشخصية -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user me-2"></i>
+                        البيانات الشخصية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>الاسم بالعربية:</strong></div>
+                        <div class="col-sm-8">{{ student.full_name_ar }}</div>
+                    </div>
+                    {% if student.full_name_en %}
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>الاسم بالإنجليزية:</strong></div>
+                        <div class="col-sm-8">{{ student.full_name_en }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>رقم الجواز:</strong></div>
+                        <div class="col-sm-8">
+                            <span class="badge bg-info">{{ student.passport_number }}</span>
+                        </div>
+                    </div>
+                    {% if student.national_id %}
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>رقم الهوية:</strong></div>
+                        <div class="col-sm-8">{{ student.national_id }}</div>
+                    </div>
+                    {% endif %}
+                    {% if student.birth_date %}
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>تاريخ الميلاد:</strong></div>
+                        <div class="col-sm-8">{{ student.birth_date.strftime('%Y-%m-%d') }}</div>
+                    </div>
+                    {% endif %}
+                    {% if student.nationality %}
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>الجنسية:</strong></div>
+                        <div class="col-sm-8">{{ student.nationality }}</div>
+                    </div>
+                    {% endif %}
+                    {% if student.gender %}
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>الجنس:</strong></div>
+                        <div class="col-sm-8">{{ student.gender }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- بيانات الاتصال -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-phone me-2"></i>
+                        بيانات الاتصال
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if student.phone %}
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>رقم الهاتف:</strong></div>
+                        <div class="col-sm-8">
+                            <a href="tel:{{ student.phone }}" class="text-decoration-none">
+                                <i class="fas fa-phone me-1"></i>{{ student.phone }}
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if student.email %}
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>البريد الإلكتروني:</strong></div>
+                        <div class="col-sm-8">
+                            <a href="mailto:{{ student.email }}" class="text-decoration-none">
+                                <i class="fas fa-envelope me-1"></i>{{ student.email }}
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if student.address %}
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>العنوان:</strong></div>
+                        <div class="col-sm-8">{{ student.address }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- البيانات الأكاديمية -->
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-graduation-cap me-2"></i>
+                        البيانات الأكاديمية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-sm-3"><strong>المؤسسة التعليمية:</strong></div>
+                        <div class="col-sm-9">
+                            {% if student.institution %}
+                                {{ student.institution.name_ar }}
+                                {% if student.institution.name_en %}
+                                    <br><small class="text-muted">{{ student.institution.name_en }}</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">غير محدد</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if student.student_id_number %}
+                    <div class="row mb-3">
+                        <div class="col-sm-3"><strong>الرقم الجامعي:</strong></div>
+                        <div class="col-sm-9">
+                            <span class="badge bg-primary">{{ student.student_id_number }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if student.major %}
+                    <div class="row mb-3">
+                        <div class="col-sm-3"><strong>التخصص:</strong></div>
+                        <div class="col-sm-9">{{ student.major }}</div>
+                    </div>
+                    {% endif %}
+                    {% if student.level %}
+                    <div class="row mb-3">
+                        <div class="col-sm-3"><strong>المستوى الدراسي:</strong></div>
+                        <div class="col-sm-9">{{ student.level }}</div>
+                    </div>
+                    {% endif %}
+                    {% if student.enrollment_date %}
+                    <div class="row mb-3">
+                        <div class="col-sm-3"><strong>تاريخ التسجيل:</strong></div>
+                        <div class="col-sm-9">{{ student.enrollment_date.strftime('%Y-%m-%d') }}</div>
+                    </div>
+                    {% endif %}
+                    {% if student.graduation_date %}
+                    <div class="row mb-3">
+                        <div class="col-sm-3"><strong>تاريخ التخرج المتوقع:</strong></div>
+                        <div class="col-sm-9">{{ student.graduation_date.strftime('%Y-%m-%d') }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="row mb-3">
+                        <div class="col-sm-3"><strong>حالة الطالب:</strong></div>
+                        <div class="col-sm-9">
+                            {% if student.status == 'نشط' %}
+                                <span class="badge bg-success">{{ student.status }}</span>
+                            {% elif student.status == 'متوقف' %}
+                                <span class="badge bg-warning">{{ student.status }}</span>
+                            {% elif student.status == 'متخرج' %}
+                                <span class="badge bg-primary">{{ student.status }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ student.status }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- البيانات المالية -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-money-bill-wave me-2"></i>
+                        البيانات المالية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>الرسوم الدراسية:</strong>
+                            <h4 class="text-primary">${{ "%.2f"|format(student.tuition_fees) }}</h4>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>المبلغ المدفوع:</strong>
+                            <h5 class="text-success">${{ "%.2f"|format(student.paid_amount) }}</h5>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>المبلغ المتبقي:</strong>
+                            <h5 class="text-danger">${{ "%.2f"|format(student.remaining_amount) }}</h5>
+                        </div>
+                    </div>
+                    {% if session.get('role') == 'admin' %}
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>الربح الصافي:</strong>
+                            <h5 class="text-info">${{ "%.2f"|format(student.net_profit) }}</h5>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="d-grid">
+                        <button class="btn btn-success" onclick="addPayment({{ student.id }})">
+                            <i class="fas fa-plus me-2"></i>
+                            إضافة دفعة
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- بيانات الوكيل ومدة الدراسة -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-handshake me-2"></i>
+                        بيانات الوكيل ومدة الدراسة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if student.agent_name %}
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>{{ translate('agent_name') }}:</strong>
+                            <p class="mb-1">{{ student.agent_name }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if student.agent_commission %}
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>{{ translate('agent_commission') }}:</strong>
+                            <p class="mb-1 text-info">{{ student.agent_commission }}%</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if student.agent_commission_amount %}
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>{{ translate('agent_commission_amount') }}:</strong>
+                            <p class="mb-1 text-success">${{ "%.2f"|format(student.agent_commission_amount) }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if student.study_duration_months %}
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>{{ translate('study_duration_months') }}:</strong>
+                            <p class="mb-1">{{ student.study_duration_months }}
+                                {% if current_language == 'ar' %}شهر{% else %}months{% endif %}
+                                {% if student.study_duration_months >= 12 %}
+                                    ({{ "%.1f"|format(student.study_duration_months / 12) }}
+                                    {% if current_language == 'ar' %}سنة{% else %}years{% endif %})
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if not student.agent_name and not student.agent_commission and not student.study_duration_months %}
+                    <p class="text-muted text-center">
+                        {% if current_language == 'ar' %}لا توجد بيانات وكيل{% else %}No agent data available{% endif %}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ملاحظات -->
+    {% if student.notes %}
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-sticky-note me-2"></i>
+                        ملاحظات
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ student.notes }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- معلومات النظام -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        معلومات النظام
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>تاريخ الإنشاء:</strong>
+                            {{ student.created_at.strftime('%Y-%m-%d %H:%M') if student.created_at else 'غير محدد' }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>آخر تحديث:</strong>
+                            {{ student.updated_at.strftime('%Y-%m-%d %H:%M') if student.updated_at else 'غير محدد' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم المستندات -->
+        <div class="col-12 mt-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>
+                        {% if current_language == 'ar' %}مستندات الطالب{% else %}Student Documents{% endif %}
+                    </h5>
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                        <i class="fas fa-upload me-1"></i>
+                        {% if current_language == 'ar' %}رفع مستند{% else %}Upload Document{% endif %}
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if student.documents %}
+                    <div class="row">
+                        {% for document in student.documents %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card document-card">
+                                <div class="card-body text-center">
+                                    {% if document.file_path.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')) %}
+                                        <i class="fas fa-image fa-3x text-info mb-2"></i>
+                                    {% elif document.file_path.lower().endswith('.pdf') %}
+                                        <i class="fas fa-file-pdf fa-3x text-danger mb-2"></i>
+                                    {% elif document.file_path.lower().endswith(('.doc', '.docx')) %}
+                                        <i class="fas fa-file-word fa-3x text-primary mb-2"></i>
+                                    {% else %}
+                                        <i class="fas fa-file fa-3x text-secondary mb-2"></i>
+                                    {% endif %}
+
+                                    <h6 class="card-title">{{ document.document_type }}</h6>
+                                    <p class="card-text small text-muted">{{ document.document_name }}</p>
+                                    <p class="card-text small">
+                                        {% if current_language == 'ar' %}الحجم:{% else %}Size:{% endif %}
+                                        {{ "%.1f"|format(document.file_size / 1024) }} KB
+                                    </p>
+                                    <p class="card-text small text-muted">
+                                        {{ document.uploaded_at.strftime('%Y-%m-%d') }}
+                                    </p>
+
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('view_document', document_id=document.id) }}"
+                                           class="btn btn-info btn-sm" target="_blank" title="{{ translate('view') }}">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('download_document', document_id=document.id) }}"
+                                           class="btn btn-success btn-sm" title="{% if current_language == 'ar' %}تحميل{% else %}Download{% endif %}">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-danger btn-sm"
+                                                onclick="deleteDocument({{ document.id }})"
+                                                title="{{ translate('delete') }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">
+                            {% if current_language == 'ar' %}لا توجد مستندات مرفوعة{% else %}No documents uploaded{% endif %}
+                        </h5>
+                        <button type="button" class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                            <i class="fas fa-upload me-2"></i>
+                            {% if current_language == 'ar' %}رفع أول مستند{% else %}Upload First Document{% endif %}
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal رفع المستندات -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-upload me-2"></i>
+                    {% if current_language == 'ar' %}رفع مستند جديد{% else %}Upload New Document{% endif %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('upload_document', student_id=student.id) }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="document_type" class="form-label">
+                            {% if current_language == 'ar' %}نوع المستند{% else %}Document Type{% endif %}
+                        </label>
+                        <select class="form-control" id="document_type" name="document_type" required>
+                            <option value="">{% if current_language == 'ar' %}اختر نوع المستند{% else %}Select Document Type{% endif %}</option>
+                            <option value="جواز السفر">{% if current_language == 'ar' %}جواز السفر{% else %}Passport{% endif %}</option>
+                            <option value="شهادة الثانوية">{% if current_language == 'ar' %}شهادة الثانوية{% else %}High School Certificate{% endif %}</option>
+                            <option value="شهادة البكالوريوس">{% if current_language == 'ar' %}شهادة البكالوريوس{% else %}Bachelor's Certificate{% endif %}</option>
+                            <option value="كشف درجات">{% if current_language == 'ar' %}كشف درجات{% else %}Transcript{% endif %}</option>
+                            <option value="صورة شخصية">{% if current_language == 'ar' %}صورة شخصية{% else %}Personal Photo{% endif %}</option>
+                            <option value="وثيقة رسمية">{% if current_language == 'ar' %}وثيقة رسمية{% else %}Official Document{% endif %}</option>
+                            <option value="أخرى">{% if current_language == 'ar' %}أخرى{% else %}Other{% endif %}</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="document" class="form-label">
+                            {% if current_language == 'ar' %}اختر الملف{% else %}Choose File{% endif %}
+                        </label>
+                        <input type="file" class="form-control" id="document" name="document"
+                               accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx" required>
+                        <small class="text-muted">
+                            {% if current_language == 'ar' %}
+                                الأنواع المدعومة: PDF, JPG, PNG, DOC, DOCX (حد أقصى 16 ميجابايت)
+                            {% else %}
+                                Supported types: PDF, JPG, PNG, DOC, DOCX (Max 16MB)
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        {{ translate('cancel') }}
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload me-2"></i>
+                        {% if current_language == 'ar' %}رفع المستند{% else %}Upload Document{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.document-card {
+    transition: transform 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.document-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.document-card .card-body {
+    padding: 1rem;
+}
+
+.btn-group .btn {
+    margin-right: 2px;
+}
+
+.modal-content {
+    border-radius: 15px;
+}
+
+.modal-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: white;
+    border-radius: 15px 15px 0 0;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteDocument(documentId) {
+    if (confirm('{% if current_language == "ar" %}هل أنت متأكد من حذف هذا المستند؟{% else %}Are you sure you want to delete this document?{% endif %}')) {
+        // إنشاء نموذج مخفي لإرسال طلب DELETE
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/delete_document/${documentId}`;
+
+        // إضافة CSRF token إذا كان متوفراً
+        const csrfToken = document.querySelector('meta[name=csrf-token]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = csrfToken.getAttribute('content');
+            form.appendChild(csrfInput);
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// تحسين تجربة رفع الملفات
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('document');
+    const uploadForm = document.querySelector('#uploadModal form');
+
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                // التحقق من حجم الملف (16MB)
+                if (file.size > 16 * 1024 * 1024) {
+                    alert('{% if current_language == "ar" %}حجم الملف كبير جداً. الحد الأقصى 16 ميجابايت.{% else %}File size is too large. Maximum 16MB allowed.{% endif %}');
+                    this.value = '';
+                    return;
+                }
+
+                // عرض معلومات الملف
+                const fileName = file.name;
+                const fileSize = (file.size / 1024).toFixed(1);
+                console.log(`Selected file: ${fileName} (${fileSize} KB)`);
+            }
+        });
+    }
+
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function() {
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>{% if current_language == "ar" %}جاري الرفع...{% else %}Uploading...{% endif %}';
+            submitBtn.disabled = true;
+        });
+    }
+});
+</script>
+{% endblock %}
+
+

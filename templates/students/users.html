@@ -1,0 +1,307 @@
+{% extends "students/base.html" %}
+
+{% block title %}إدارة المستخدمين - نظام إدارة الطلاب{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-users-cog me-2"></i>
+                        إدارة المستخدمين
+                    </h4>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                        <i class="fas fa-user-plus me-2"></i>
+                        إضافة مستخدم جديد
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-users fa-2x mb-2"></i>
+                    <h4>{{ users|length }}</h4>
+                    <p class="mb-0">إجمالي المستخدمين</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-shield fa-2x mb-2"></i>
+                    <h4>{{ users | selectattr('role', 'equalto', 'admin') | list | length }}</h4>
+                    <p class="mb-0">المديرون</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-tie fa-2x mb-2"></i>
+                    <h4>{{ users | selectattr('role', 'equalto', 'employee') | list | length }}</h4>
+                    <p class="mb-0">الموظفون</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-check fa-2x mb-2"></i>
+                    <h4>{{ users | selectattr('is_active', 'equalto', true) | list | length }}</h4>
+                    <p class="mb-0">المستخدمون النشطون</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    {% if users %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>الاسم الكامل</th>
+                                        <th>اسم المستخدم</th>
+                                        <th>الصلاحية</th>
+                                        <th>الحالة</th>
+                                        <th>آخر تسجيل دخول</th>
+                                        <th>تاريخ الإنشاء</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in users %}
+                                    <tr>
+                                        <td>{{ loop.index }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-circle me-3">
+                                                    <i class="fas fa-user"></i>
+                                                </div>
+                                                <strong>{{ user.full_name }}</strong>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ user.username }}</span>
+                                        </td>
+                                        <td>
+                                            {% if user.role == 'admin' %}
+                                                <span class="badge bg-danger">مدير</span>
+                                            {% else %}
+                                                <span class="badge bg-info">موظف</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if user.is_active %}
+                                                <span class="badge bg-success">نشط</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">غير نشط</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if user.last_login %}
+                                                {{ user.last_login.strftime('%Y-%m-%d %H:%M') }}
+                                            {% else %}
+                                                <span class="text-muted">لم يسجل دخول</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'غير محدد' }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                        onclick="showChangePasswordModal({{ user.id }}, '{{ user.full_name }}')" 
+                                                        title="تغيير كلمة المرور">
+                                                    <i class="fas fa-key"></i>
+                                                </button>
+                                                <a href="{{ url_for('toggle_user', user_id=user.id) }}" 
+                                                   class="btn btn-sm btn-outline-{{ 'warning' if user.is_active else 'success' }}" 
+                                                   title="{{ 'إلغاء تفعيل' if user.is_active else 'تفعيل' }}">
+                                                    <i class="fas fa-{{ 'user-slash' if user.is_active else 'user-check' }}"></i>
+                                                </a>
+                                                {% if user.username != 'admin' %}
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        onclick="deleteUser({{ user.id }}, '{{ user.full_name }}')" 
+                                                        title="حذف">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-users fa-4x text-muted mb-3"></i>
+                            <h4 class="text-muted">لا يوجد مستخدمون</h4>
+                            <p class="text-muted">ابدأ بإضافة أول مستخدم في النظام</p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                                <i class="fas fa-user-plus me-2"></i>
+                                إضافة مستخدم جديد
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2"></i>
+                    إضافة مستخدم جديد
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_user') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="full_name" class="form-label">الاسم الكامل *</label>
+                        <input type="text" class="form-control" id="full_name" name="full_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="username" class="form-label">اسم المستخدم *</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">كلمة المرور *</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">الصلاحية *</label>
+                        <select class="form-control" id="role" name="role" required>
+                            <option value="">اختر الصلاحية</option>
+                            <option value="admin">مدير</option>
+                            <option value="employee">موظف</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>
+                        إلغاء
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>
+                        حفظ المستخدم
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-key me-2"></i>
+                    تغيير كلمة المرور
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('change_password') }}">
+                <div class="modal-body">
+                    <input type="hidden" id="change_user_id" name="user_id">
+                    <div class="mb-3">
+                        <label class="form-label">المستخدم</label>
+                        <input type="text" class="form-control" id="change_user_name" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">كلمة المرور الجديدة *</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>
+                        إلغاء
+                    </button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-key me-2"></i>
+                        تغيير كلمة المرور
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(102, 126, 234, 0.1);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showChangePasswordModal(userId, userName) {
+    document.getElementById('change_user_id').value = userId;
+    document.getElementById('change_user_name').value = userName;
+    document.getElementById('new_password').value = '';
+    
+    var modal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
+    modal.show();
+}
+
+function deleteUser(userId, userName) {
+    if (confirm(`هل أنت متأكد من حذف المستخدم "${userName}"؟ هذا الإجراء لا يمكن التراجع عنه.`)) {
+        window.location.href = `/delete_user/${userId}`;
+    }
+}
+
+// التحقق من صحة النموذج
+document.querySelector('#addUserModal form').addEventListener('submit', function(e) {
+    const username = document.getElementById('username').value.trim();
+    const fullName = document.getElementById('full_name').value.trim();
+    const password = document.getElementById('password').value;
+    const role = document.getElementById('role').value;
+    
+    if (!username || !fullName || !password || !role) {
+        e.preventDefault();
+        alert('يرجى ملء جميع الحقول المطلوبة');
+    }
+    
+    if (password.length < 6) {
+        e.preventDefault();
+        alert('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+    }
+});
+</script>
+{% endblock %}

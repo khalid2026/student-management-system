@@ -1,0 +1,319 @@
+{% extends "students/base.html" %}
+
+{% block title %}المدفوعات - نظام إدارة الطلاب{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-money-bill-wave me-2"></i>
+                        إدارة المدفوعات
+                    </h4>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPaymentModal">
+                        <i class="fas fa-plus me-2"></i>
+                        إضافة دفعة جديدة
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-receipt fa-2x mb-2"></i>
+                    <h4>{{ total_payments }}</h4>
+                    <p class="mb-0">إجمالي المدفوعات</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-dollar-sign fa-2x mb-2"></i>
+                    <h4>${{ "%.2f"|format(total_amount) }}</h4>
+                    <p class="mb-0">إجمالي المبلغ</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-calendar-day fa-2x mb-2"></i>
+                    <h4>0</h4>
+                    <p class="mb-0">مدفوعات اليوم</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    {% if payments.items %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>الطالب</th>
+                                        <th>المبلغ</th>
+                                        <th>تاريخ الدفع</th>
+                                        <th>طريقة الدفع</th>
+                                        <th>رقم الإيصال</th>
+                                        <th>ملاحظات</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment in payments.items %}
+                                    <tr>
+                                        <td>{{ loop.index + (payments.page - 1) * payments.per_page }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-circle me-3">
+                                                    <i class="fas fa-user"></i>
+                                                </div>
+                                                <div>
+                                                    <strong>{{ payment.student.full_name_ar }}</strong>
+                                                    <br><small class="text-muted">{{ payment.student.passport_number }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success fs-6">${{ "%.2f"|format(payment.amount) }}</span>
+                                        </td>
+                                        <td>{{ payment.payment_date.strftime('%Y-%m-%d') if payment.payment_date else 'غير محدد' }}</td>
+                                        <td>
+                                            {% if payment.payment_method %}
+                                                <span class="badge bg-info">{{ payment.payment_method }}</span>
+                                            {% else %}
+                                                <span class="text-muted">غير محدد</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ payment.receipt_number or 'غير محدد' }}</td>
+                                        <td>
+                                            {% if payment.notes %}
+                                                <span title="{{ payment.notes }}">{{ payment.notes[:30] }}{% if payment.notes|length > 30 %}...{% endif %}</span>
+                                            {% else %}
+                                                <span class="text-muted">لا توجد</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                        onclick="viewPayment({{ payment.id }})" title="عرض التفاصيل">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                        onclick="editPayment({{ payment.id }})" title="تعديل">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        onclick="deletePayment({{ payment.id }})" title="حذف">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if payments.pages > 1 %}
+                        <nav aria-label="تنقل الصفحات">
+                            <ul class="pagination justify-content-center">
+                                {% if payments.has_prev %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('payments', page=payments.prev_num) }}">السابق</a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for page_num in payments.iter_pages() %}
+                                    {% if page_num %}
+                                        {% if page_num != payments.page %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('payments', page=page_num) }}">{{ page_num }}</a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ page_num }}</span>
+                                            </li>
+                                        {% endif %}
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">...</span>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if payments.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('payments', page=payments.next_num) }}">التالي</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-money-bill-wave fa-4x text-muted mb-3"></i>
+                            <h4 class="text-muted">لا توجد مدفوعات</h4>
+                            <p class="text-muted">ابدأ بإضافة أول دفعة في النظام</p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPaymentModal">
+                                <i class="fas fa-plus me-2"></i>
+                                إضافة دفعة جديدة
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Payment Modal -->
+<div class="modal fade" id="addPaymentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus me-2"></i>
+                    إضافة دفعة جديدة
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_payment') }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="student_id" class="form-label">الطالب *</label>
+                            <select class="form-control" id="student_id" name="student_id" required>
+                                <option value="">اختر الطالب</option>
+                                <!-- سيتم تحميل الطلاب عبر JavaScript -->
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="amount" class="form-label">المبلغ *</label>
+                            <input type="number" step="0.01" class="form-control" id="amount" name="amount" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="payment_date" class="form-label">تاريخ الدفع *</label>
+                            <input type="date" class="form-control" id="payment_date" name="payment_date" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="payment_method" class="form-label">طريقة الدفع</label>
+                            <select class="form-control" id="payment_method" name="payment_method">
+                                <option value="">اختر طريقة الدفع</option>
+                                <option value="نقدي">نقدي</option>
+                                <option value="بنكي">تحويل بنكي</option>
+                                <option value="شيك">شيك</option>
+                                <option value="بطاقة ائتمان">بطاقة ائتمان</option>
+                                <option value="أخرى">أخرى</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="receipt_number" class="form-label">رقم الإيصال</label>
+                            <input type="text" class="form-control" id="receipt_number" name="receipt_number">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="notes" class="form-label">ملاحظات</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>
+                        إلغاء
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>
+                        حفظ الدفعة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(102, 126, 234, 0.1);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// تحميل قائمة الطلاب عند فتح النموذج
+document.getElementById('addPaymentModal').addEventListener('show.bs.modal', function() {
+    loadStudents();
+    // تعيين التاريخ الحالي
+    document.getElementById('payment_date').value = new Date().toISOString().split('T')[0];
+});
+
+function loadStudents() {
+    const select = document.getElementById('student_id');
+    select.innerHTML = '<option value="">جاري التحميل...</option>';
+
+    fetch('/api/students')
+        .then(response => response.json())
+        .then(students => {
+            select.innerHTML = '<option value="">اختر الطالب</option>';
+            students.forEach(student => {
+                const option = document.createElement('option');
+                option.value = student.id;
+                option.textContent = `${student.name} - ${student.passport} (متبقي: $${student.remaining.toFixed(2)})`;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('خطأ في تحميل الطلاب:', error);
+            select.innerHTML = '<option value="">خطأ في التحميل</option>';
+        });
+}
+
+function viewPayment(paymentId) {
+    alert('سيتم إضافة عرض تفاصيل الدفعة قريباً - ID: ' + paymentId);
+}
+
+function editPayment(paymentId) {
+    alert('سيتم إضافة تعديل الدفعة قريباً - ID: ' + paymentId);
+}
+
+function deletePayment(paymentId) {
+    if (confirm('هل أنت متأكد من حذف هذه الدفعة؟ هذا الإجراء لا يمكن التراجع عنه.')) {
+        alert('سيتم إضافة حذف الدفعة قريباً - ID: ' + paymentId);
+    }
+}
+</script>
+{% endblock %}

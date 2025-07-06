@@ -1,0 +1,264 @@
+{% extends "students/base.html" %}
+
+{% block title %}{{ translate('edit') }} {{ translate('institutions') }} - {{ translate('app_title') }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>
+                        {% if current_language == 'ar' %}تعديل المؤسسة التعليمية{% else %}Edit Educational Institution{% endif %}
+                    </h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-university me-2"></i>
+                        {% if current_language == 'ar' %}بيانات المؤسسة{% else %}Institution Data{% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <!-- الاسم العربي -->
+                            <div class="col-md-6 mb-3">
+                                <label for="name_ar" class="form-label">
+                                    {% if current_language == 'ar' %}الاسم العربي{% else %}Arabic Name{% endif %}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="name_ar" name="name_ar" 
+                                       value="{{ institution.name_ar }}" required>
+                            </div>
+
+                            <!-- الاسم الإنجليزي -->
+                            <div class="col-md-6 mb-3">
+                                <label for="name_en" class="form-label">
+                                    {% if current_language == 'ar' %}الاسم الإنجليزي{% else %}English Name{% endif %}
+                                </label>
+                                <input type="text" class="form-control" id="name_en" name="name_en" 
+                                       value="{{ institution.name_en or '' }}">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- نوع المؤسسة -->
+                            <div class="col-md-4 mb-3">
+                                <label for="type" class="form-label">
+                                    {% if current_language == 'ar' %}نوع المؤسسة{% else %}Institution Type{% endif %}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-control" id="type" name="type" required>
+                                    <option value="">{% if current_language == 'ar' %}اختر النوع{% else %}Select Type{% endif %}</option>
+                                    <option value="جامعة" {% if institution.type == 'جامعة' %}selected{% endif %}>
+                                        {% if current_language == 'ar' %}جامعة{% else %}University{% endif %}
+                                    </option>
+                                    <option value="كلية" {% if institution.type == 'كلية' %}selected{% endif %}>
+                                        {% if current_language == 'ar' %}كلية{% else %}College{% endif %}
+                                    </option>
+                                    <option value="معهد" {% if institution.type == 'معهد' %}selected{% endif %}>
+                                        {% if current_language == 'ar' %}معهد{% else %}Institute{% endif %}
+                                    </option>
+                                    <option value="مدرسة" {% if institution.type == 'مدرسة' %}selected{% endif %}>
+                                        {% if current_language == 'ar' %}مدرسة{% else %}School{% endif %}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- المدينة -->
+                            <div class="col-md-4 mb-3">
+                                <label for="city" class="form-label">
+                                    {% if current_language == 'ar' %}المدينة{% else %}City{% endif %}
+                                </label>
+                                <input type="text" class="form-control" id="city" name="city" 
+                                       value="{{ institution.city or '' }}">
+                            </div>
+
+                            <!-- البلد -->
+                            <div class="col-md-4 mb-3">
+                                <label for="country" class="form-label">
+                                    {% if current_language == 'ar' %}البلد{% else %}Country{% endif %}
+                                </label>
+                                <select class="form-control" id="country" name="country">
+                                    <option value="">{% if current_language == 'ar' %}اختر البلد{% else %}Select Country{% endif %}</option>
+                                    <option value="العراق" {% if institution.country == 'العراق' %}selected{% endif %}>
+                                        {% if current_language == 'ar' %}العراق{% else %}Iraq{% endif %}
+                                    </option>
+                                    <option value="ماليزيا" {% if institution.country == 'ماليزيا' %}selected{% endif %}>
+                                        {% if current_language == 'ar' %}ماليزيا{% else %}Malaysia{% endif %}
+                                    </option>
+                                    <option value="تركيا" {% if institution.country == 'تركيا' %}selected{% endif %}>
+                                        {% if current_language == 'ar' %}تركيا{% else %}Turkey{% endif %}
+                                    </option>
+                                    <option value="الأردن" {% if institution.country == 'الأردن' %}selected{% endif %}>
+                                        {% if current_language == 'ar' %}الأردن{% else %}Jordan{% endif %}
+                                    </option>
+                                    <option value="مصر" {% if institution.country == 'مصر' %}selected{% endif %}>
+                                        {% if current_language == 'ar' %}مصر{% else %}Egypt{% endif %}
+                                    </option>
+                                    <option value="الإمارات" {% if institution.country == 'الإمارات' %}selected{% endif %}>
+                                        {% if current_language == 'ar' %}الإمارات{% else %}UAE{% endif %}
+                                    </option>
+                                    <option value="السعودية" {% if institution.country == 'السعودية' %}selected{% endif %}>
+                                        {% if current_language == 'ar' %}السعودية{% else %}Saudi Arabia{% endif %}
+                                    </option>
+                                    <option value="لبنان" {% if institution.country == 'لبنان' %}selected{% endif %}>
+                                        {% if current_language == 'ar' %}لبنان{% else %}Lebanon{% endif %}
+                                    </option>
+                                    <option value="سوريا" {% if institution.country == 'سوريا' %}selected{% endif %}>
+                                        {% if current_language == 'ar' %}سوريا{% else %}Syria{% endif %}
+                                    </option>
+                                    <option value="أخرى" {% if institution.country == 'أخرى' %}selected{% endif %}>
+                                        {% if current_language == 'ar' %}أخرى{% else %}Other{% endif %}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- معلومات إضافية -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    {% if current_language == 'ar' %}
+                                        <strong>ملاحظة:</strong> الحقول المميزة بـ (*) مطلوبة. يمكنك ترك الحقول الأخرى فارغة إذا لم تكن متوفرة.
+                                    {% else %}
+                                        <strong>Note:</strong> Fields marked with (*) are required. You can leave other fields empty if not available.
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- أزرار التحكم -->
+                        <div class="row">
+                            <div class="col-12 text-center">
+                                <button type="submit" class="btn btn-success btn-lg me-3">
+                                    <i class="fas fa-save me-2"></i>
+                                    {{ translate('save') }}
+                                </button>
+                                <a href="{{ url_for('institution_details', institution_id=institution.id) }}" 
+                                   class="btn btn-secondary btn-lg me-3">
+                                    <i class="fas fa-times me-2"></i>
+                                    {{ translate('cancel') }}
+                                </a>
+                                <a href="{{ url_for('institutions') }}" class="btn btn-info btn-lg">
+                                    <i class="fas fa-list me-2"></i>
+                                    {% if current_language == 'ar' %}قائمة المؤسسات{% else %}Institutions List{% endif %}
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- معلومات المؤسسة الحالية -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        {% if current_language == 'ar' %}المعلومات الحالية{% else %}Current Information{% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>{% if current_language == 'ar' %}الاسم العربي:{% else %}Arabic Name:{% endif %}</strong> {{ institution.name_ar }}</p>
+                            <p><strong>{% if current_language == 'ar' %}النوع:{% else %}Type:{% endif %}</strong> {{ institution.type }}</p>
+                            <p><strong>{% if current_language == 'ar' %}المدينة:{% else %}City:{% endif %}</strong> {{ institution.city or 'غير محدد' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>{% if current_language == 'ar' %}الاسم الإنجليزي:{% else %}English Name:{% endif %}</strong> {{ institution.name_en or 'غير محدد' }}</p>
+                            <p><strong>{% if current_language == 'ar' %}البلد:{% else %}Country:{% endif %}</strong> {{ institution.country or 'غير محدد' }}</p>
+                            <p><strong>{% if current_language == 'ar' %}تاريخ الإضافة:{% else %}Added Date:{% endif %}</strong> {{ institution.created_at.strftime('%Y-%m-%d %H:%M') if institution.created_at else 'غير محدد' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-label {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.text-danger {
+    color: var(--danger-color) !important;
+}
+
+.alert-info {
+    background-color: var(--light-accent);
+    border-color: var(--info-color);
+    color: var(--text-color);
+}
+
+.card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: none;
+    border-radius: 15px;
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 10px 20px;
+}
+
+.btn-lg {
+    padding: 12px 30px;
+    font-size: 1.1rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // تحسين تجربة المستخدم
+    const form = document.querySelector('form');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    form.addEventListener('submit', function() {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري الحفظ...';
+        submitBtn.disabled = true;
+    });
+    
+    // التحقق من صحة البيانات
+    const nameArInput = document.getElementById('name_ar');
+    const typeSelect = document.getElementById('type');
+    
+    function validateForm() {
+        const isValid = nameArInput.value.trim() !== '' && typeSelect.value !== '';
+        submitBtn.disabled = !isValid;
+    }
+    
+    nameArInput.addEventListener('input', validateForm);
+    typeSelect.addEventListener('change', validateForm);
+    
+    // تطبيق التحقق الأولي
+    validateForm();
+});
+</script>
+{% endblock %}

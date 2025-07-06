@@ -1,0 +1,426 @@
+{% extends "students/base.html" %}
+
+{% block title %}التقارير والإحصائيات - نظام إدارة الطلاب{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        التقارير والإحصائيات
+                    </h4>
+                    <div>
+                        <button class="btn btn-success" onclick="exportReport('excel')">
+                            <i class="fas fa-file-excel me-2"></i>
+                            تصدير Excel
+                        </button>
+                        <button class="btn btn-danger" onclick="exportReport('pdf')">
+                            <i class="fas fa-file-pdf me-2"></i>
+                            تصدير PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- إحصائيات الطلاب -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        إحصائيات الطلاب
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="stats-card bg-primary text-white">
+                                <div class="stats-number">{{ total_students }}</div>
+                                <div class="stats-label">إجمالي الطلاب</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stats-card bg-success text-white">
+                                <div class="stats-number">{{ active_students }}</div>
+                                <div class="stats-label">الطلاب النشطون</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stats-card bg-info text-white">
+                                <div class="stats-number">{{ graduated_students }}</div>
+                                <div class="stats-label">الخريجون</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stats-card bg-warning text-white">
+                                <div class="stats-number">{{ suspended_students }}</div>
+                                <div class="stats-label">المتوقفون</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- إحصائيات المؤسسات والمدفوعات -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-university me-2"></i>
+                        إحصائيات المؤسسات
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <h3 class="text-primary">{{ total_institutions }}</h3>
+                                <p class="mb-0">إجمالي المؤسسات</p>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <h3 class="text-success">{{ universities }}</h3>
+                                <p class="mb-0">الجامعات</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h3 class="text-info">{{ institutes }}</h3>
+                                <p class="mb-0">المعاهد</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h3 class="text-warning">{{ total_institutions - universities - institutes }}</h3>
+                                <p class="mb-0">أخرى</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-money-bill-wave me-2"></i>
+                        إحصائيات المدفوعات
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <h4 class="text-primary">${{ "%.2f"|format(total_fees) }}</h4>
+                                <p class="mb-0">إجمالي الرسوم</p>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <h4 class="text-success">${{ "%.2f"|format(total_paid) }}</h4>
+                                <p class="mb-0">المبلغ المدفوع</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h4 class="text-danger">${{ "%.2f"|format(total_remaining) }}</h4>
+                                <p class="mb-0">المبلغ المتبقي</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h4 class="text-info">{{ total_payments }}</h4>
+                                <p class="mb-0">عدد المدفوعات</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- الطلاب حسب المؤسسة -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        توزيع الطلاب حسب المؤسسة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if students_by_institution %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>المؤسسة</th>
+                                        <th>عدد الطلاب</th>
+                                        <th>النسبة</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for institution, count in students_by_institution %}
+                                    <tr>
+                                        <td>{{ institution }}</td>
+                                        <td>{{ count }}</td>
+                                        <td>
+                                            {% set percentage = (count / total_students * 100) if total_students > 0 else 0 %}
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar" role="progressbar" 
+                                                     style="width: {{ percentage }}%">
+                                                    {{ "%.1f"|format(percentage) }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">لا توجد بيانات لعرضها</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        المدفوعات الشهرية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if monthly_payments %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>الشهر</th>
+                                        <th>المبلغ</th>
+                                        <th>الرسم البياني</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for month, total in monthly_payments %}
+                                    <tr>
+                                        <td>{{ month }}</td>
+                                        <td>${{ "%.2f"|format(total) }}</td>
+                                        <td>
+                                            {% set max_amount = monthly_payments | map(attribute=1) | max %}
+                                            {% set percentage = (total / max_amount * 100) if max_amount > 0 else 0 %}
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar bg-success" role="progressbar" 
+                                                     style="width: {{ percentage }}%">
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">لا توجد بيانات مدفوعات</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- إحصائيات الوكلاء -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-handshake me-2"></i>
+                        إحصائيات الوكلاء
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="alert alert-info">
+                                <h6 class="mb-1">إجمالي عمولات الوكلاء</h6>
+                                <h4 class="mb-0">${{ "%.2f"|format(total_agent_commissions) }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert alert-success">
+                                <h6 class="mb-1">عدد الوكلاء النشطين</h6>
+                                <h4 class="mb-0">{{ agents_stats|length }}</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if agents_stats %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>اسم الوكيل</th>
+                                        <th>عدد الطلاب</th>
+                                        <th>إجمالي العمولة</th>
+                                        <th>متوسط العمولة</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for agent_name, students_count, total_commission in agents_stats %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ agent_name }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ students_count }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-success">${{ "%.2f"|format(total_commission or 0) }}</span>
+                                        </td>
+                                        <td>
+                                            {% if students_count > 0 %}
+                                                <span class="text-info">${{ "%.2f"|format((total_commission or 0) / students_count) }}</span>
+                                            {% else %}
+                                                <span class="text-muted">$0.00</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-handshake fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">لا توجد بيانات وكلاء حالياً</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- تقارير سريعة -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>
+                        تقارير سريعة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <button class="btn btn-outline-primary w-100" onclick="generateReport('students_list')">
+                                <i class="fas fa-users fa-2x mb-2 d-block"></i>
+                                قائمة الطلاب
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button class="btn btn-outline-success w-100" onclick="generateReport('payments_report')">
+                                <i class="fas fa-money-bill fa-2x mb-2 d-block"></i>
+                                تقرير المدفوعات
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button class="btn btn-outline-info w-100" onclick="generateReport('institutions_report')">
+                                <i class="fas fa-university fa-2x mb-2 d-block"></i>
+                                تقرير المؤسسات
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button class="btn btn-outline-warning w-100" onclick="generateReport('financial_report')">
+                                <i class="fas fa-chart-bar fa-2x mb-2 d-block"></i>
+                                التقرير المالي
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.stats-card {
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.stats-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.stats-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.progress {
+    border-radius: 10px;
+}
+
+.progress-bar {
+    border-radius: 10px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function exportReport(format) {
+    alert('سيتم إضافة تصدير التقارير بصيغة ' + format.toUpperCase() + ' قريباً');
+}
+
+function generateReport(type) {
+    let reportName = '';
+    switch(type) {
+        case 'students_list':
+            reportName = 'قائمة الطلاب';
+            break;
+        case 'payments_report':
+            reportName = 'تقرير المدفوعات';
+            break;
+        case 'institutions_report':
+            reportName = 'تقرير المؤسسات';
+            break;
+        case 'financial_report':
+            reportName = 'التقرير المالي';
+            break;
+    }
+    alert('سيتم إنشاء ' + reportName + ' قريباً');
+}
+
+// تحديث الصفحة كل 5 دقائق لعرض أحدث الإحصائيات
+setInterval(function() {
+    location.reload();
+}, 300000); // 5 دقائق
+</script>
+{% endblock %}

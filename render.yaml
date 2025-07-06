@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: khalidsoft
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn student_management:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.18
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FLASK_ENV
+        value: production
+  
+  - type: pserv
+    name: khalidsoft-db
+    env: postgresql
+    plan: free
+    databaseName: khalidsoft_db
+    user: khalidsoft_user

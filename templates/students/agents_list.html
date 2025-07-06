@@ -1,0 +1,230 @@
+{% extends "students/base.html" %}
+
+{% block title %}{{ translate('agent_list') }} - Khalid Soft{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- العنوان والأزرار -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="text-primary">
+                <i class="fas fa-handshake me-2"></i>
+                {{ translate('agent_list') }}
+            </h2>
+            <p class="text-muted">إدارة الوكلاء ونسب العمولات</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('add_agent') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>
+                {{ translate('add_agent') }}
+            </a>
+        </div>
+    </div>
+
+    <!-- إحصائيات سريعة -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">إجمالي الوكلاء</h6>
+                            <h3 class="mb-0">{{ agents_stats|length }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">الوكلاء النشطون</h6>
+                            <h3 class="mb-0">{{ agents_stats|selectattr('agent.status', 'equalto', 'نشط')|list|length }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-check fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">إجمالي الطلاب</h6>
+                            <h3 class="mb-0">{{ agents_stats|sum(attribute='students_count') }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-graduation-cap fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">إجمالي العمولات</h6>
+                            <h3 class="mb-0">${{ "%.2f"|format(agents_stats|sum(attribute='total_commission')) }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-dollar-sign fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- جدول الوكلاء -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>
+                قائمة الوكلاء
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if agents_stats %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>اسم الوكيل</th>
+                                <th>رقم الهاتف</th>
+                                <th>البريد الإلكتروني</th>
+                                <th>نسبة العمولة</th>
+                                <th>عدد الطلاب</th>
+                                <th>إجمالي العمولة</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in agents_stats %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>
+                                    <strong>{{ stat.agent.name }}</strong>
+                                    {% if stat.agent.notes %}
+                                        <br><small class="text-muted">{{ stat.agent.notes[:50] }}{% if stat.agent.notes|length > 50 %}...{% endif %}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if stat.agent.phone %}
+                                        <a href="tel:{{ stat.agent.phone }}" class="text-decoration-none">
+                                            <i class="fas fa-phone me-1"></i>{{ stat.agent.phone }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">غير محدد</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if stat.agent.email %}
+                                        <a href="mailto:{{ stat.agent.email }}" class="text-decoration-none">
+                                            <i class="fas fa-envelope me-1"></i>{{ stat.agent.email }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">غير محدد</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ stat.agent.commission_percentage }}%</span>
+                                </td>
+                                <td>
+                                    {% if stat.students_count > 0 %}
+                                        <span class="badge bg-primary">{{ stat.students_count }}</span>
+                                    {% else %}
+                                        <span class="text-muted">0</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if stat.total_commission > 0 %}
+                                        <span class="text-success fw-bold">${{ "%.2f"|format(stat.total_commission) }}</span>
+                                    {% else %}
+                                        <span class="text-muted">$0.00</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if stat.agent.status == 'نشط' %}
+                                        <span class="badge bg-success">نشط</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">غير نشط</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('edit_agent', agent_id=stat.agent.id) }}" 
+                                           class="btn btn-sm btn-outline-primary" title="تعديل">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% if stat.students_count == 0 %}
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="confirmDelete({{ stat.agent.id }}, '{{ stat.agent.name }}')" title="حذف">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-handshake fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">لا توجد وكلاء مسجلون</h5>
+                    <p class="text-muted">ابدأ بإضافة وكيل جديد</p>
+                    <a href="{{ url_for('add_agent') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>
+                        إضافة وكيل جديد
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal تأكيد الحذف -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تأكيد الحذف</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>هل أنت متأكد من حذف الوكيل <strong id="agentName"></strong>؟</p>
+                <p class="text-danger"><small>هذا الإجراء لا يمكن التراجع عنه.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">حذف</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmDelete(agentId, agentName) {
+    document.getElementById('agentName').textContent = agentName;
+    document.getElementById('deleteForm').action = '/delete_agent/' + agentId;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}

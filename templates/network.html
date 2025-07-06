@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}الشبكة - إدارة MikroTik{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-sitemap me-2"></i>
+            إعدادات الشبكة
+        </h1>
+    </div>
+</div>
+
+<!-- Interfaces Card -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-network-wired me-2"></i>
+                    الواجهات
+                </h5>
+                <button class="btn btn-primary btn-sm" onclick="refreshInterfaces()">
+                    <i class="fas fa-sync-alt me-1"></i>
+                    تحديث
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="interfaces-table">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin me-2"></i>
+                        جاري تحميل الواجهات...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- IP Addresses Card -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-globe me-2"></i>
+                    عناوين IP
+                </h5>
+                <button class="btn btn-primary btn-sm" onclick="refreshIPAddresses()">
+                    <i class="fas fa-sync-alt me-1"></i>
+                    تحديث
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="ip-addresses-table">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin me-2"></i>
+                        جاري تحميل عناوين IP...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    loadInterfaces();
+    loadIPAddresses();
+    
+    // تحديث كل دقيقتين
+    setInterval(function() {
+        loadInterfaces();
+        loadIPAddresses();
+    }, 120000);
+});
+
+function loadInterfaces() {
+    $.get('/api/interfaces')
+        .done(function(response) {
+            if (response.success) {
+                displayInterfaces(response.data);
+            } else {
+                $('#interfaces-table').html(`
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        خطأ في تحميل الواجهات: ${response.error}
+                    </div>
+                `);
+            }
+        })
+        .fail(function() {
+            $('#interfaces-table').html(`
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    فشل في الاتصال بالخادم
+                </div>
+            `);
+        });
+}
+
+function displayInterfaces(interfaces) {
+    if (interfaces.length === 0) {
+        $('#interfaces-table').html(`
+            <div class="text-center py-4">
+                <i class="fas fa-network-wired fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">لا توجد واجهات</h5>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>اسم الواجهة</th>
+                        <th>النوع</th>
+                        <th>الحالة</th>
+                        <th>التفعيل</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    interfaces.forEach(function(iface) {
+        const statusIcon = iface.running ? 'fas fa-check-circle text-success' : 'fas fa-times-circle text-danger';
+        const statusText = iface.running ? 'نشط' : 'متوقف';
+        const enabledIcon = iface.disabled ? 'fas fa-ban text-warning' : 'fas fa-check text-success';
+        const enabledText = iface.disabled ? 'معطل' : 'مفعل';
+        
+        html += `
+            <tr>
+                <td>
+                    <strong>${iface.name}</strong>
+                </td>
+                <td>
+                    <span class="badge bg-secondary">${iface.type}</span>
+                </td>
+                <td>
+                    <i class="${statusIcon} me-1"></i>
+                    ${statusText}
+                </td>
+                <td>
+                    <i class="${enabledIcon} me-1"></i>
+                    ${enabledText}
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    $('#interfaces-table').html(html);
+}
+
+function loadIPAddresses() {
+    $.get('/api/ip-addresses')
+        .done(function(response) {
+            if (response.success) {
+                displayIPAddresses(response.data);
+            } else {
+                $('#ip-addresses-table').html(`
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        خطأ في تحميل عناوين IP: ${response.error}
+                    </div>
+                `);
+            }
+        })
+        .fail(function() {
+            $('#ip-addresses-table').html(`
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    فشل في الاتصال بالخادم
+                </div>
+            `);
+        });
+}
+
+function displayIPAddresses(addresses) {
+    if (addresses.length === 0) {
+        $('#ip-addresses-table').html(`
+            <div class="text-center py-4">
+                <i class="fas fa-globe fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">لا توجد عناوين IP</h5>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>عنوان IP</th>
+                        <th>الواجهة</th>
+                        <th>الشبكة</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    addresses.forEach(function(addr) {
+        const statusIcon = addr.disabled ? 'fas fa-ban text-warning' : 'fas fa-check text-success';
+        const statusText = addr.disabled ? 'معطل' : 'نشط';
+        
+        html += `
+            <tr>
+                <td>
+                    <code>${addr.address}</code>
+                </td>
+                <td>
+                    <strong>${addr.interface}</strong>
+                </td>
+                <td>
+                    <code>${addr.network}</code>
+                </td>
+                <td>
+                    <i class="${statusIcon} me-1"></i>
+                    ${statusText}
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    $('#ip-addresses-table').html(html);
+}
+
+function refreshInterfaces() {
+    $('#interfaces-table').html(`
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin me-2"></i>
+            جاري التحديث...
+        </div>
+    `);
+    loadInterfaces();
+}
+
+function refreshIPAddresses() {
+    $('#ip-addresses-table').html(`
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin me-2"></i>
+            جاري التحديث...
+        </div>
+    `);
+    loadIPAddresses();
+}
+</script>
+{% endblock %}

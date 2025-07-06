@@ -1,0 +1,181 @@
+{% extends "students/base.html" %}
+
+{% block title %}{{ translate('add_agent') }} - Khalid Soft{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- العنوان -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('index') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('agents_list') }}">{{ translate('agent_list') }}</a></li>
+                    <li class="breadcrumb-item active">{{ translate('add_agent') }}</li>
+                </ol>
+            </nav>
+            <h2 class="text-primary">
+                <i class="fas fa-user-plus me-2"></i>
+                {{ translate('add_agent') }}
+            </h2>
+            <p class="text-muted">إضافة وكيل جديد مع تحديد نسبة العمولة</p>
+        </div>
+    </div>
+
+    <!-- نموذج إضافة الوكيل -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-handshake me-2"></i>
+                        بيانات الوكيل الجديد
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        <!-- البيانات الأساسية -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2">
+                                    <i class="fas fa-user me-2"></i>
+                                    البيانات الأساسية
+                                </h6>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">اسم الوكيل <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" required
+                                       placeholder="أدخل اسم الوكيل كاملاً">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="commission_percentage" class="form-label">{{ translate('commission_percentage') }} <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="commission_percentage" name="commission_percentage" 
+                                           step="0.1" min="0" max="100" value="5.0" required>
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <small class="text-muted">نسبة العمولة الافتراضية للوكيل</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">رقم الهاتف</label>
+                                <input type="tel" class="form-control" id="phone" name="phone"
+                                       placeholder="مثال: +966501234567">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">البريد الإلكتروني</label>
+                                <input type="email" class="form-control" id="email" name="email"
+                                       placeholder="مثال: agent@example.com">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="status" class="form-label">الحالة</label>
+                                <select class="form-control" id="status" name="status">
+                                    <option value="نشط" selected>نشط</option>
+                                    <option value="غير نشط">غير نشط</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- العنوان -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2">
+                                    <i class="fas fa-map-marker-alt me-2"></i>
+                                    معلومات إضافية
+                                </h6>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label for="address" class="form-label">العنوان</label>
+                                <textarea class="form-control" id="address" name="address" rows="3"
+                                          placeholder="أدخل عنوان الوكيل (اختياري)"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label for="notes" class="form-label">ملاحظات</label>
+                                <textarea class="form-control" id="notes" name="notes" rows="4"
+                                          placeholder="أي ملاحظات إضافية عن الوكيل (اختياري)"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- أزرار الحفظ -->
+                        <div class="row">
+                            <div class="col-12">
+                                <hr>
+                                <div class="d-flex justify-content-between">
+                                    <a href="{{ url_for('agents_list') }}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>
+                                        رجوع
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>
+                                        حفظ الوكيل
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // التحقق من صحة النموذج
+    const form = document.querySelector('form');
+    const nameInput = document.getElementById('name');
+    const commissionInput = document.getElementById('commission_percentage');
+
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+
+        // التحقق من اسم الوكيل
+        if (!nameInput.value.trim()) {
+            nameInput.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            nameInput.classList.remove('is-invalid');
+        }
+
+        // التحقق من نسبة العمولة
+        const commission = parseFloat(commissionInput.value);
+        if (isNaN(commission) || commission < 0 || commission > 100) {
+            commissionInput.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            commissionInput.classList.remove('is-invalid');
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+            alert('يرجى تصحيح الأخطاء في النموذج');
+        }
+    });
+
+    // إزالة رسائل الخطأ عند الكتابة
+    nameInput.addEventListener('input', function() {
+        this.classList.remove('is-invalid');
+    });
+
+    commissionInput.addEventListener('input', function() {
+        this.classList.remove('is-invalid');
+    });
+});
+</script>
+{% endblock %}

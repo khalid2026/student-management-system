@@ -1,0 +1,307 @@
+{% extends "students/base.html" %}
+
+{% block title %}{{ translate('dashboard') }} - {{ translate('app_title') }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h1 class="display-4 mb-3">
+                        <i class="fas fa-graduation-cap text-primary me-3"></i>
+                        {{ translate('welcome') }}
+                    </h1>
+                    <p class="lead text-muted">
+                        {% if current_language == 'ar' %}
+                            نظام شامل لإدارة بيانات الطلاب والمؤسسات التعليمية
+                        {% else %}
+                            Comprehensive system for managing student and educational institution data
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                            <i class="fas fa-users fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold text-primary mb-1">{{ total_students }}</h3>
+                    <p class="text-muted mb-0">{{ translate('total_students') }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <i class="fas fa-user-check fa-2x text-success"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold text-success mb-1">{{ active_students }}</h3>
+                    <p class="text-muted mb-0">{{ translate('active_students') }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                            <i class="fas fa-university fa-2x text-info"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold text-info mb-1">{{ total_institutions }}</h3>
+                    <p class="text-muted mb-0">{{ translate('total_institutions') }}</p>
+                </div>
+            </div>
+        </div>
+        {% if session.get('role') == 'admin' %}
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                            <i class="fas fa-chart-line fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold text-warning mb-1">${{ "%.2f"|format(total_net_profit) }}</h3>
+                    <p class="text-muted mb-0">
+                        {% if current_language == 'ar' %}الأرباح الصافية{% else %}Net Profits{% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>
+                        {{ translate('quick_actions') }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('add_student') }}" class="btn btn-primary w-100 py-3">
+                                <i class="fas fa-user-plus fa-2x mb-2 d-block"></i>
+                                {{ translate('add_student') }}
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('search_students') }}" class="btn btn-info w-100 py-3">
+                                <i class="fas fa-search fa-2x mb-2 d-block"></i>
+                                {{ translate('search') }}
+                            </a>
+                        </div>
+                        {% if session.get('role') == 'admin' %}
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('view_students') }}" class="btn btn-success w-100 py-3">
+                                <i class="fas fa-users fa-2x mb-2 d-block"></i>
+                                {{ translate('manage_students') }}
+                            </a>
+                        </div>
+                        {% endif %}
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('institutions') }}" class="btn btn-warning w-100 py-3">
+                                <i class="fas fa-university fa-2x mb-2 d-block"></i>
+                                {{ translate('institutions') }}
+                            </a>
+                        </div>
+                        {% if session.get('role') == 'admin' %}
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('payments') }}" class="btn btn-success w-100 py-3">
+                                <i class="fas fa-money-bill-wave fa-2x mb-2 d-block"></i>
+                                {{ translate('payments') }}
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('reports') }}" class="btn btn-danger w-100 py-3">
+                                <i class="fas fa-chart-bar fa-2x mb-2 d-block"></i>
+                                {{ translate('reports') }}
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('manage_users') }}" class="btn btn-dark w-100 py-3">
+                                <i class="fas fa-users-cog fa-2x mb-2 d-block"></i>
+                                {{ translate('users') }}
+                            </a>
+                        </div>
+                        {% endif %}
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('settings') }}" class="btn btn-secondary w-100 py-3">
+                                <i class="fas fa-cog fa-2x mb-2 d-block"></i>
+                                {{ translate('settings') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock me-2"></i>
+                        {{ translate('recent_activities') }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% if recent_activities %}
+                            {% for activity in recent_activities %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    {% if activity.action == 'add_student' %}
+                                        <i class="fas fa-user-plus text-success me-2"></i>
+                                    {% elif activity.action == 'edit_student' %}
+                                        <i class="fas fa-edit text-primary me-2"></i>
+                                    {% elif activity.action == 'add_payment' %}
+                                        <i class="fas fa-money-bill text-warning me-2"></i>
+                                    {% elif activity.action == 'add_institution' %}
+                                        <i class="fas fa-university text-info me-2"></i>
+                                    {% else %}
+                                        <i class="fas fa-activity text-secondary me-2"></i>
+                                    {% endif %}
+                                    {{ activity.description }}
+                                </div>
+                                <small class="text-muted">
+                                    {{ activity.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                </small>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="list-group-item text-center text-muted">
+                                <i class="fas fa-info-circle me-2"></i>
+                                {% if current_language == 'ar' %}لا توجد أنشطة حديثة{% else %}No recent activities{% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        {{ translate('important_alerts') }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_alerts %}
+                        {% for alert in recent_alerts %}
+                        <div class="alert alert-{% if alert.priority == 'high' %}danger{% elif alert.priority == 'medium' %}warning{% else %}info{% endif %}" role="alert">
+                            {% if alert.alert_type == 'payment' %}
+                                <i class="fas fa-money-bill-wave me-2"></i>
+                            {% elif alert.alert_type == 'student' %}
+                                <i class="fas fa-user me-2"></i>
+                            {% else %}
+                                <i class="fas fa-info-circle me-2"></i>
+                            {% endif %}
+                            <strong>{{ alert.title }}:</strong> {{ alert.message }}
+                            <small class="d-block text-muted mt-1">
+                                {{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-success" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>{% if current_language == 'ar' %}ممتاز!{% else %}Excellent!{% endif %}</strong>
+                            {% if current_language == 'ar' %}لا توجد تنبيهات مهمة في الوقت الحالي{% else %}No important alerts at the moment{% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Modal -->
+<div class="modal fade" id="searchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-search me-2"></i>
+                    البحث عن طالب
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="searchForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">البحث بالاسم</label>
+                            <input type="text" class="form-control search-box" id="searchName" placeholder="أدخل اسم الطالب">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">البحث برقم الجواز</label>
+                            <input type="text" class="form-control search-box" id="searchPassport" placeholder="أدخل رقم الجواز">
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i>
+                            بحث
+                        </button>
+                    </div>
+                </form>
+                <div id="searchResults" class="mt-4"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showSearchModal() {
+    var searchModal = new bootstrap.Modal(document.getElementById('searchModal'));
+    searchModal.show();
+}
+
+function showAddStudentModal() {
+    // سيتم إضافة هذه الوظيفة لاحقاً
+    alert('سيتم إضافة نموذج تسجيل الطالب قريباً');
+}
+
+// Handle search form
+document.getElementById('searchForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('searchName').value;
+    const passport = document.getElementById('searchPassport').value;
+    
+    if (!name && !passport) {
+        alert('يرجى إدخال اسم الطالب أو رقم الجواز للبحث');
+        return;
+    }
+    
+    // سيتم إضافة منطق البحث لاحقاً
+    document.getElementById('searchResults').innerHTML = 
+        '<div class="alert alert-info">جاري البحث...</div>';
+});
+</script>
+{% endblock %}

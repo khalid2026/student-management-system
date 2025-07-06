@@ -1,0 +1,269 @@
+{% extends "students/base.html" %}
+
+{% block title %}البحث عن الطلاب - نظام إدارة الطلاب{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- نموذج البحث -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-search me-2"></i>
+                        البحث عن الطلاب
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="searchForm">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="search_type" class="form-label">نوع البحث</label>
+                                <select class="form-control" id="search_type" name="search_type" required>
+                                    <option value="name">البحث بالاسم</option>
+                                    <option value="passport">البحث برقم الجواز</option>
+                                    <option value="student_id">البحث بالرقم الجامعي</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="search_query" class="form-label">كلمة البحث</label>
+                                <input type="text" class="form-control search-box" id="search_query" 
+                                       name="search_query" value="{{ search_query }}" 
+                                       placeholder="أدخل كلمة البحث" required>
+                            </div>
+                            <div class="col-md-2 mb-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search me-2"></i>
+                                    بحث
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- نتائج البحث -->
+    {% if search_query %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        نتائج البحث
+                    </h5>
+                    <span class="badge bg-primary">{{ students|length }} نتيجة</span>
+                </div>
+                <div class="card-body">
+                    {% if students %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>الاسم الكامل</th>
+                                        <th>رقم الجواز</th>
+                                        <th>المؤسسة التعليمية</th>
+                                        <th>التخصص</th>
+                                        <th>الحالة</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for student in students %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-circle me-3">
+                                                    <i class="fas fa-user"></i>
+                                                </div>
+                                                <div>
+                                                    <strong>{{ student.full_name_ar }}</strong>
+                                                    {% if student.full_name_en %}
+                                                        <br><small class="text-muted">{{ student.full_name_en }}</small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ student.passport_number }}</span>
+                                        </td>
+                                        <td>
+                                            {% if student.institution %}
+                                                {{ student.institution.name_ar }}
+                                            {% else %}
+                                                <span class="text-muted">غير محدد</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {{ student.major or 'غير محدد' }}
+                                        </td>
+                                        <td>
+                                            {% if student.status == 'نشط' %}
+                                                <span class="badge bg-success">{{ student.status }}</span>
+                                            {% elif student.status == 'متوقف' %}
+                                                <span class="badge bg-warning">{{ student.status }}</span>
+                                            {% elif student.status == 'متخرج' %}
+                                                <span class="badge bg-primary">{{ student.status }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ student.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                        onclick="viewStudent({{ student.id }})">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                        onclick="editStudent({{ student.id }})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                                        onclick="viewPayments({{ student.id }})">
+                                                    <i class="fas fa-money-bill"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">لم يتم العثور على نتائج</h5>
+                            <p class="text-muted">جرب تغيير كلمة البحث أو نوع البحث</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- رسالة ترحيبية -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-search fa-4x text-primary mb-4"></i>
+                    <h3 class="text-primary mb-3">ابحث عن الطلاب</h3>
+                    <p class="lead text-muted mb-4">
+                        يمكنك البحث عن الطلاب باستخدام الاسم أو رقم الجواز أو الرقم الجامعي
+                    </p>
+                    <div class="row justify-content-center">
+                        <div class="col-md-8">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-primary">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-user fa-2x text-primary mb-2"></i>
+                                            <h6>البحث بالاسم</h6>
+                                            <small class="text-muted">ابحث باستخدام اسم الطالب</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-info">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-passport fa-2x text-info mb-2"></i>
+                                            <h6>البحث برقم الجواز</h6>
+                                            <small class="text-muted">ابحث باستخدام رقم الجواز</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-success">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-id-card fa-2x text-success mb-2"></i>
+                                            <h6>البحث بالرقم الجامعي</h6>
+                                            <small class="text-muted">ابحث باستخدام الرقم الجامعي</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal لعرض تفاصيل الطالب -->
+<div class="modal fade" id="studentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user me-2"></i>
+                    تفاصيل الطالب
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="studentDetails">
+                <!-- سيتم تحميل التفاصيل هنا -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.search-box:focus {
+    box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+    border-color: #764ba2;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(102, 126, 234, 0.1);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function viewStudent(studentId) {
+    // سيتم إضافة منطق عرض تفاصيل الطالب
+    alert('سيتم إضافة عرض تفاصيل الطالب قريباً - ID: ' + studentId);
+}
+
+function editStudent(studentId) {
+    // سيتم إضافة منطق تعديل الطالب
+    alert('سيتم إضافة تعديل الطالب قريباً - ID: ' + studentId);
+}
+
+function viewPayments(studentId) {
+    // سيتم إضافة منطق عرض المدفوعات
+    alert('سيتم إضافة عرض المدفوعات قريباً - ID: ' + studentId);
+}
+
+// البحث السريع أثناء الكتابة
+let searchTimeout;
+document.getElementById('search_query').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    const query = this.value.trim();
+    
+    if (query.length >= 2) {
+        searchTimeout = setTimeout(function() {
+            // سيتم إضافة البحث السريع لاحقاً
+        }, 500);
+    }
+});
+</script>
+{% endblock %}
