@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - نظام إدارة الطلاب المحسن</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .main-content {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin: 20px;
+            padding: 30px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-card.financial {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .stat-card.agents {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .stat-card.new {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px 0;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+        }
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- شريط التنقل -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-graduation-cap me-2"></i>
+                نظام إدارة الطلاب المحسن - Khalid Soft
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('students') }}">
+                    <i class="fas fa-users me-1"></i>الطلاب
+                </a>
+                <a class="nav-link" href="{{ url_for('agents') }}">
+                    <i class="fas fa-user-tie me-1"></i>الوكلاء
+                </a>
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt me-1"></i>خروج
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="h2 mb-4">
+                    <i class="fas fa-tachometer-alt me-3"></i>
+                    لوحة التحكم - نظام إدارة الطلاب المحسن
+                </h1>
+            </div>
+        </div>
+
+        <!-- الإحصائيات الرئيسية -->
+        <div class="row">
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ total_students }}</h3>
+                            <p class="mb-0">إجمالي الطلاب</p>
+                        </div>
+                        <i class="fas fa-users fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card agents">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ total_agents }}</h3>
+                            <p class="mb-0">إجمالي الوكلاء</p>
+                        </div>
+                        <i class="fas fa-user-tie fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card financial">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ total_institutions }}</h3>
+                            <p class="mb-0">المؤسسات التعليمية</p>
+                        </div>
+                        <i class="fas fa-university fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card new">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ new_students }}</h3>
+                            <p class="mb-0">طلاب جدد (30 يوم)</p>
+                        </div>
+                        <i class="fas fa-user-plus fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- الإحصائيات المالية -->
+        <div class="row">
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card financial">
+                    <div class="text-center">
+                        <h4 class="mb-1">${{ "%.2f"|format(total_fees) }}</h4>
+                        <p class="mb-0">إجمالي الرسوم</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card financial">
+                    <div class="text-center">
+                        <h4 class="mb-1">${{ "%.2f"|format(total_paid) }}</h4>
+                        <p class="mb-0">إجمالي المدفوع</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card financial">
+                    <div class="text-center">
+                        <h4 class="mb-1">${{ "%.2f"|format(total_remaining) }}</h4>
+                        <p class="mb-0">إجمالي المتبقي</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card financial">
+                    <div class="text-center">
+                        <h4 class="mb-1">${{ "%.2f"|format(total_profit) }}</h4>
+                        <p class="mb-0">الربح الصافي</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- عمولات الوكلاء -->
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            إجمالي عمولات الوكلاء
+                        </h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <h2 class="text-primary">${{ "%.2f"|format(total_agent_commission) }}</h2>
+                        <p class="text-muted">إجمالي العمولات المستحقة للوكلاء</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-trophy me-2"></i>
+                            أفضل الوكلاء
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if top_agents %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>الوكيل</th>
+                                            <th>عدد الطلاب</th>
+                                            <th>العمولة</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for agent in top_agents %}
+                                        <tr>
+                                            <td>{{ agent.name }}</td>
+                                            <td><span class="badge bg-primary">{{ agent.student_count }}</span></td>
+                                            <td>${{ "%.2f"|format(agent.total_commission or 0) }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted text-center">لا توجد بيانات وكلاء</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- إجراءات سريعة -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-bolt me-2"></i>
+                            إجراءات سريعة
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <a href="{{ url_for('add_student') }}" class="btn btn-primary w-100">
+                                    <i class="fas fa-user-plus me-2"></i>
+                                    تسجيل طالب جديد
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <a href="{{ url_for('students') }}" class="btn btn-success w-100">
+                                    <i class="fas fa-users me-2"></i>
+                                    إدارة الطلاب
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <a href="{{ url_for('agents') }}" class="btn btn-info w-100">
+                                    <i class="fas fa-user-tie me-2"></i>
+                                    إدارة الوكلاء
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <button class="btn btn-warning w-100" onclick="generateReport()">
+                                    <i class="fas fa-chart-line me-2"></i>
+                                    تقرير شامل
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function generateReport() {
+            alert('سيتم إنشاء التقرير الشامل قريباً...');
+        }
+    </script>
+</body>
+</html>
