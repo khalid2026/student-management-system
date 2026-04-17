@@ -807,7 +807,7 @@ def login():
         else:
             flash('اسم المستخدم أو كلمة المرور غير صحيحة', 'error')
 
-    return render_template('auth/login.html')
+    return render_template('login.html')
 
 # تسجيل الخروج
 @app.route('/logout')

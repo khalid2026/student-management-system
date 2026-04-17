@@ -46,11 +46,23 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
 
 db = SQLAlchemy(app)
 
+# العملة الوحيدة المدعومة - الرنجت الماليزي
+CURRENCY_SYMBOLS = {
+    'MYR': 'RM'
+}
+
+# العملة الافتراضية
+DEFAULT_CURRENCY = 'MYR'
+
+def format_amount_with_currency(amount, currency_code=None):
+    """تنسيق المبلغ مع رمز الرنجت الماليزي"""
+    return f"RM {amount:,.2f}"
+
 # قاموس الترجمات الكامل
 TRANSLATIONS = {
     'ar': {
         # العناوين الرئيسية
-        'app_title': 'نظام إدارة الطلاب - Khalid Soft',
+        'app_title': 'نظام رايت للاستشارات الطلابية - Right Student Consultancy',
         'dashboard': 'لوحة التحكم',
         'add_student': 'تسجيل طالب جديد',
         'manage_students': 'إدارة الطلاب',
@@ -240,7 +252,7 @@ TRANSLATIONS = {
     },
     'en': {
         # Main Titles
-        'app_title': 'Student Management System - Khalid Soft',
+        'app_title': 'Right Student Consultancy System - نظام رايت للاستشارات الطلابية',
         'dashboard': 'Dashboard',
         'add_student': 'Add New Student',
         'manage_students': 'Manage Students',
@@ -445,13 +457,15 @@ def translate(key, lang=None):
         lang = get_user_language()
     return TRANSLATIONS.get(lang, {}).get(key, key)
 
-# إضافة الترجمة للقوالب
+# إضافة الترجمة والعملات للقوالب
 @app.context_processor
 def inject_translations():
     return {
         'translate': translate,
         'current_language': get_user_language(),
-        'user_settings': get_user_settings() if 'user_id' in session else None
+        'user_settings': get_user_settings() if 'user_id' in session else None,
+        'currency_symbols': CURRENCY_SYMBOLS,
+        'format_amount_with_currency': format_amount_with_currency
     }
 
 def get_user_settings():
@@ -537,8 +551,8 @@ def check_payment_alerts():
 
         if not existing_alert:
             alert = create_alert(
-                title=f"مبلغ متبقي كبير - {student.full_name_ar}",
-                message=f"الطالب {student.full_name_ar} لديه مبلغ متبقي قدره {student.remaining_amount:.2f} دولار",
+                title=f"مبلغ متبقي كبير - {student.full_name_en}",
+                message=f"الطالب {student.full_name_en} لديه مبلغ متبقي قدره {student.remaining_amount:.2f} دولار",
                 alert_type='payment',
                 priority='high',
                 student_id=student.id
@@ -610,7 +624,7 @@ class User(db.Model):
 
     def set_password(self, password):
         """تشفير كلمة المرور"""
-        self.password_hash = generate_password_hash(password)
+        self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
 
     def check_password(self, password):
         """التحقق من كلمة المرور"""
@@ -648,7 +662,9 @@ class Agent(db.Model):
     name = db.Column(db.String(200), nullable=False)              # اسم الوكيل
     phone = db.Column(db.String(20), nullable=True)               # رقم الهاتف
     email = db.Column(db.String(100), nullable=True)              # البريد الإلكتروني
+    commission_type = db.Column(db.String(20), default='percentage')  # نوع العمولة (percentage, fixed)
     commission_percentage = db.Column(db.Float, default=5.0)      # نسبة العمولة الافتراضية
+    commission_fixed = db.Column(db.Float, default=0.0)           # العمولة الثابتة
     address = db.Column(db.Text, nullable=True)                   # العنوان
     notes = db.Column(db.Text, nullable=True)                     # ملاحظات
     status = db.Column(db.String(20), default='نشط')             # الحالة (نشط، غير نشط)
@@ -682,26 +698,15 @@ class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     
     # البيانات الشخصية
-    first_name_ar = db.Column(db.String(100), nullable=False)    # الاسم الأول بالعربية
-    last_name_ar = db.Column(db.String(100), nullable=False)     # اسم العائلة بالعربية
-    first_name_en = db.Column(db.String(100), nullable=True)     # الاسم الأول بالإنجليزية
-    last_name_en = db.Column(db.String(100), nullable=True)      # اسم العائلة بالإنجليزية
-    
+    full_name_en = db.Column(db.String(200), nullable=False)     # الاسم الكامل بالإنجليزية
+
     # بيانات الهوية
     passport_number = db.Column(db.String(50), unique=True, nullable=False)  # رقم الجواز
-    national_id = db.Column(db.String(50), nullable=True)        # رقم الهوية الوطنية
-    birth_date = db.Column(db.Date, nullable=True)               # تاريخ الميلاد
     nationality = db.Column(db.String(100), nullable=True)       # الجنسية
     gender = db.Column(db.String(10), nullable=True)             # الجنس
     
-    # بيانات الاتصال
-    phone = db.Column(db.String(20), nullable=True)              # رقم الهاتف
-    email = db.Column(db.String(120), nullable=True)             # البريد الإلكتروني
-    address = db.Column(db.Text, nullable=True)                  # العنوان
-    
     # البيانات الأكاديمية
     institution_id = db.Column(db.Integer, db.ForeignKey('institutions.id'), nullable=False)
-    student_id_number = db.Column(db.String(50), nullable=True)  # الرقم الجامعي
     major = db.Column(db.String(200), nullable=True)             # التخصص
     level = db.Column(db.String(50), nullable=True)              # المستوى الدراسي
     enrollment_date = db.Column(db.Date, nullable=True)          # تاريخ التسجيل
@@ -710,6 +715,7 @@ class Student(db.Model):
     
     # البيانات المالية
     tuition_fees = db.Column(db.Float, default=0.0)             # الرسوم الدراسية
+    currency_symbol = db.Column(db.String(10), default='MYR')   # رمز العملة - رنجت ماليزي
     paid_amount = db.Column(db.Float, default=0.0)              # المبلغ المدفوع
     remaining_amount = db.Column(db.Float, default=0.0)         # المبلغ المتبقي
     profit_percentage = db.Column(db.Float, default=20.0)       # نسبة الربح %
@@ -728,19 +734,7 @@ class Student(db.Model):
     notes = db.Column(db.Text, nullable=True)                   # ملاحظات
     
     def __repr__(self):
-        return f'<Student {self.first_name_ar} {self.last_name_ar}>'
-    
-    @property
-    def full_name_ar(self):
-        """الاسم الكامل بالعربية"""
-        return f"{self.first_name_ar} {self.last_name_ar}"
-    
-    @property
-    def full_name_en(self):
-        """الاسم الكامل بالإنجليزية"""
-        if self.first_name_en and self.last_name_en:
-            return f"{self.first_name_en} {self.last_name_en}"
-        return None
+        return f'<Student {self.full_name_en}>'
 
 class Payment(db.Model):
     """نموذج المدفوعات"""
@@ -749,6 +743,7 @@ class Payment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=False)
     amount = db.Column(db.Float, nullable=False)                 # المبلغ
+    currency = db.Column(db.String(10), default='MYR')           # العملة - رنجت ماليزي
     payment_date = db.Column(db.Date, nullable=False)            # تاريخ الدفع
     payment_method = db.Column(db.String(50), nullable=True)     # طريقة الدفع
     receipt_number = db.Column(db.String(100), nullable=True)    # رقم الإيصال
@@ -839,7 +834,7 @@ def admin_required(f):
         if 'user_id' not in session:
             return redirect(url_for('login'))
 
-        user = User.query.get(session['user_id'])
+        user = db.session.get(User, session['user_id'])
         if not user or user.role != 'admin':
             flash('ليس لديك صلاحية للوصول لهذه الصفحة', 'error')
             return redirect(url_for('index'))
@@ -849,7 +844,7 @@ def admin_required(f):
 def get_current_user():
     """الحصول على المستخدم الحالي"""
     if 'user_id' in session:
-        return User.query.get(session['user_id'])
+        return db.session.get(User, session['user_id'])
     return None
 
 # إنشاء قاعدة البيانات
@@ -884,7 +879,7 @@ def login():
         else:
             flash('اسم المستخدم أو كلمة المرور غير صحيحة', 'error')
 
-    return render_template('auth/login.html')
+    return render_template('login.html')
 
 # تسجيل الخروج
 @app.route('/logout')
@@ -935,12 +930,9 @@ def add_student():
     if request.method == 'POST':
         try:
             # معالجة التواريخ
-            birth_date = None
             enrollment_date = None
             graduation_date = None
 
-            if request.form.get('birth_date'):
-                birth_date = datetime.strptime(request.form['birth_date'], '%Y-%m-%d').date()
             if request.form.get('enrollment_date'):
                 enrollment_date = datetime.strptime(request.form['enrollment_date'], '%Y-%m-%d').date()
             if request.form.get('graduation_date'):
@@ -948,25 +940,17 @@ def add_student():
 
             # استلام البيانات من النموذج
             student = Student(
-                first_name_ar=request.form['first_name_ar'],
-                last_name_ar=request.form['last_name_ar'],
-                first_name_en=request.form.get('first_name_en'),
-                last_name_en=request.form.get('last_name_en'),
+                full_name_en=request.form['full_name_en'],
                 passport_number=request.form['passport_number'],
-                national_id=request.form.get('national_id'),
-                birth_date=birth_date,
                 nationality=request.form.get('nationality'),
                 gender=request.form.get('gender'),
-                phone=request.form.get('phone'),
-                email=request.form.get('email'),
-                address=request.form.get('address'),
                 institution_id=request.form['institution_id'],
-                student_id_number=request.form.get('student_id_number'),
                 major=request.form.get('major'),
                 level=request.form.get('level'),
                 enrollment_date=enrollment_date,
                 graduation_date=graduation_date,
                 tuition_fees=float(request.form.get('tuition_fees', 0)),
+                currency_symbol=request.form.get('currency_symbol', 'MYR'),
                 profit_percentage=float(request.form.get('profit_percentage', 20.0)),
                 status=request.form.get('status', 'نشط'),
                 notes=request.form.get('notes'),
@@ -988,14 +972,14 @@ def add_student():
             # تسجيل النشاط
             log_activity(
                 action='add_student',
-                description=f'تم تسجيل طالب جديد: {student.full_name_ar}',
+                description=f'تم تسجيل طالب جديد: {student.full_name_en}',
                 student_id=student.id
             )
 
             # إنشاء تنبيه للطالب الجديد
             create_alert(
                 title='طالب جديد',
-                message=f'تم تسجيل طالب جديد: {student.full_name_ar}',
+                message=f'تم تسجيل طالب جديد: {student.full_name_en}',
                 alert_type='student',
                 priority='medium',
                 student_id=student.id
@@ -1027,12 +1011,7 @@ def search_students():
         if search_query:
             if search_type == 'name':
                 students = Student.query.filter(
-                    db.or_(
-                        Student.first_name_ar.contains(search_query),
-                        Student.last_name_ar.contains(search_query),
-                        Student.first_name_en.contains(search_query),
-                        Student.last_name_en.contains(search_query)
-                    )
+                    Student.full_name_en.contains(search_query)
                 ).all()
             elif search_type == 'passport':
                 students = Student.query.filter(
@@ -1061,12 +1040,7 @@ def api_search():
 
     if search_type == 'name':
         results = Student.query.filter(
-            db.or_(
-                Student.first_name_ar.contains(query),
-                Student.last_name_ar.contains(query),
-                Student.first_name_en.contains(query),
-                Student.last_name_en.contains(query)
-            )
+            Student.full_name_en.contains(query)
         ).limit(10).all()
     elif search_type == 'passport':
         results = Student.query.filter(
@@ -1078,7 +1052,7 @@ def api_search():
     for student in results:
         students.append({
             'id': student.id,
-            'name_ar': student.full_name_ar,
+            'name_ar': student.full_name_en,
             'name_en': student.full_name_en,
             'passport_number': student.passport_number,
             'institution': student.institution.name_ar if student.institution else '',
@@ -1098,7 +1072,7 @@ def api_students():
     for student in students:
         students_list.append({
             'id': student.id,
-            'name': student.full_name_ar,
+            'name': student.full_name_en,
             'passport': student.passport_number,
             'remaining': student.remaining_amount or 0
         })
@@ -1135,7 +1109,7 @@ def delete_student(student_id):
     """حذف الطالب"""
     try:
         student = Student.query.get_or_404(student_id)
-        student_name = student.full_name_ar
+        student_name = student.full_name_en
 
         # حذف المدفوعات المرتبطة أولاً
         Payment.query.filter_by(student_id=student_id).delete()
@@ -1233,6 +1207,7 @@ def add_payment():
         payment = Payment(
             student_id=student_id,
             amount=amount,
+            currency='MYR',  # رنجت ماليزي
             payment_date=payment_date,
             payment_method=payment_method,
             receipt_number=receipt_number,
@@ -1242,7 +1217,7 @@ def add_payment():
         db.session.add(payment)
 
         # تحديث المبلغ المدفوع للطالب
-        student = Student.query.get(student_id)
+        student = db.session.get(Student, student_id)
         if student:
             student.paid_amount += amount
             student.remaining_amount = student.tuition_fees - student.paid_amount
@@ -1256,7 +1231,7 @@ def add_payment():
         if student:
             log_activity(
                 action='add_payment',
-                description=f'تم إضافة دفعة بمبلغ {amount} دولار للطالب {student.full_name_ar}',
+                description=f'تم إضافة دفعة بمبلغ {amount} دولار للطالب {student.full_name_en}',
                 student_id=student.id
             )
 
@@ -1443,31 +1418,19 @@ def edit_student(student_id):
                     flash('تاريخ التخرج غير صحيح', 'error')
 
             # التحقق من الحقول المطلوبة
-            if not request.form.get('first_name_ar'):
-                flash('الاسم الأول بالعربية مطلوب', 'error')
-                raise ValueError('الاسم الأول بالعربية مطلوب')
-
-            if not request.form.get('last_name_ar'):
-                flash('الاسم الأخير بالعربية مطلوب', 'error')
-                raise ValueError('الاسم الأخير بالعربية مطلوب')
+            if not request.form.get('full_name_en'):
+                flash('الاسم الكامل مطلوب', 'error')
+                raise ValueError('الاسم الكامل مطلوب')
 
             if not request.form.get('passport_number'):
                 flash('رقم الجواز مطلوب', 'error')
                 raise ValueError('رقم الجواز مطلوب')
 
             # تحديث البيانات
-            student.first_name_ar = request.form['first_name_ar'].strip()
-            student.last_name_ar = request.form['last_name_ar'].strip()
-            student.first_name_en = request.form.get('first_name_en', '').strip() or None
-            student.last_name_en = request.form.get('last_name_en', '').strip() or None
+            student.full_name_en = request.form['full_name_en'].strip()
             student.passport_number = request.form['passport_number'].strip()
-            student.national_id = request.form.get('national_id', '').strip() or None
-            student.birth_date = birth_date
             student.nationality = request.form.get('nationality', '').strip() or None
             student.gender = request.form.get('gender', '').strip() or None
-            student.phone = request.form.get('phone', '').strip() or None
-            student.email = request.form.get('email', '').strip() or None
-            student.address = request.form.get('address', '').strip() or None
 
             # التحقق من المؤسسة
             institution_id = request.form.get('institution_id')
@@ -1477,17 +1440,20 @@ def edit_student(student_id):
                 flash('المؤسسة التعليمية مطلوبة', 'error')
                 raise ValueError('المؤسسة التعليمية مطلوبة')
 
-            student.student_id_number = request.form.get('student_id_number', '').strip() or None
+
             student.major = request.form.get('major', '').strip() or None
             student.level = request.form.get('level', '').strip() or None
             student.enrollment_date = enrollment_date
             student.graduation_date = graduation_date
 
-            # معالجة الرسوم ونسبة الربح
+            # معالجة الرسوم ونسبة الربح والعملة
             try:
                 student.tuition_fees = float(request.form.get('tuition_fees', 0))
             except ValueError:
                 student.tuition_fees = 0.0
+
+            # تحديث رمز العملة
+            student.currency_symbol = request.form.get('currency_symbol', 'MYR')
 
             try:
                 student.profit_percentage = float(request.form.get('profit_percentage', 20.0))
@@ -1525,7 +1491,7 @@ def edit_student(student_id):
             # تسجيل النشاط
             log_activity(
                 action='edit_student',
-                description=f'تم تعديل بيانات الطالب {student.full_name_ar}',
+                description=f'تم تعديل بيانات الطالب {student.full_name_en}',
                 student_id=student.id
             )
 
@@ -1594,7 +1560,7 @@ def change_password():
         user_id = request.form['user_id']
         new_password = request.form['new_password']
 
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if user:
             user.set_password(new_password)
             db.session.commit()
@@ -1614,7 +1580,7 @@ def change_password():
 def toggle_user(user_id):
     """تفعيل أو إلغاء تفعيل المستخدم"""
     try:
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if user:
             user.is_active = not user.is_active
             db.session.commit()
@@ -1635,7 +1601,7 @@ def toggle_user(user_id):
 def delete_user(user_id):
     """حذف المستخدم"""
     try:
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if user:
             # منع حذف المدير الرئيسي
             if user.username == 'admin':
@@ -1725,7 +1691,7 @@ def upload_document(student_id):
         # تسجيل النشاط
         log_activity(
             action='upload_document',
-            description=f'تم رفع مستند ({document_type}) للطالب {student.full_name_ar}',
+            description=f'تم رفع مستند ({document_type}) للطالب {student.full_name_en}',
             student_id=student_id
         )
 
@@ -1961,6 +1927,9 @@ def add_sample_data():
             birth_date = datetime.now() - timedelta(days=random.randint(6570, 10950))  # عمر بين 18-30 سنة
             enrollment_date = datetime.now() - timedelta(days=random.randint(30, 365))  # مسجل منذ شهر إلى سنة
 
+            # العملة الوحيدة - الرنجت الماليزي
+            currency_symbol = 'MYR'
+
             tuition_fees = random.choice([12000, 15000, 18000, 20000, 25000, 30000])
             paid_amount = random.randint(int(tuition_fees * 0.3), int(tuition_fees * 0.9))
             remaining_amount = tuition_fees - paid_amount
@@ -1971,25 +1940,17 @@ def add_sample_data():
             agent_commission_amount = (paid_amount * agent.commission_percentage) / 100
 
             student = Student(
-                first_name_ar=first_name,
-                last_name_ar=last_name,
-                first_name_en=first_name,  # للبساطة
-                last_name_en=last_name,
+                full_name_en=f"{first_name} {last_name}",
                 passport_number=f"P{random.randint(100000, 999999)}",
-                national_id=f"{random.randint(1000000000, 1999999999)}",
-                birth_date=birth_date,
                 nationality="سعودي" if random.random() > 0.3 else random.choice(["مصري", "سوري", "أردني", "لبناني", "فلسطيني"]),
                 gender=gender,
-                phone=f"+966{random.randint(500000000, 599999999)}",
-                email=f"{first_name.lower()}.{last_name.lower().replace('ال', '')}@email.com",
-                address=f"{random.choice(['الرياض', 'جدة', 'الدمام', 'مكة', 'المدينة'])}، المملكة العربية السعودية",
                 institution_id=institution.id,
-                student_id_number=f"STU{random.randint(100000, 999999)}",
                 major=random.choice(["هندسة الحاسوب", "إدارة الأعمال", "الطب", "الصيدلة", "الهندسة المدنية", "علوم الحاسوب", "المحاسبة", "التسويق"]),
                 level=random.choice(["السنة الأولى", "السنة الثانية", "السنة الثالثة", "السنة الرابعة"]),
                 enrollment_date=enrollment_date,
                 status="نشط",
                 tuition_fees=tuition_fees,
+                currency_symbol=currency_symbol,
                 paid_amount=paid_amount,
                 remaining_amount=remaining_amount,
                 profit_percentage=profit_percentage,
@@ -2020,7 +1981,7 @@ def add_sample_data():
                     amount=payment_amount,
                     payment_date=datetime.now() - timedelta(days=random.randint(1, 180)),
                     payment_method=random.choice(["نقد", "تحويل بنكي", "شيك", "بطاقة ائتمان"]),
-                    notes=f"دفعة {j+1} للطالب {student.full_name_ar}"
+                    notes=f"دفعة {j+1} للطالب {student.full_name_en}"
                 )
                 db.session.add(payment)
 
@@ -2040,21 +2001,44 @@ def add_sample_data():
 @login_required
 @admin_required
 def agents_list():
-    """عرض قائمة الوكلاء"""
-    agents = Agent.query.order_by(Agent.created_at.desc()).all()
+    """عرض قائمة الوكلاء مع البحث"""
+    search = request.args.get('search', '').strip()
+    status_filter = request.args.get('status', '')
+
+    # بناء الاستعلام
+    query = Agent.query
+
+    if search:
+        query = query.filter(
+            db.or_(
+                Agent.name.contains(search),
+                Agent.phone.contains(search),
+                Agent.email.contains(search)
+            )
+        )
+
+    if status_filter:
+        query = query.filter(Agent.status == status_filter)
+
+    agents = query.order_by(Agent.created_at.desc()).all()
 
     # حساب إحصائيات لكل وكيل
     agents_stats = []
     for agent in agents:
-        students_count = Student.query.filter_by(agent_id=agent.id).count()
+        students = Student.query.filter_by(agent_id=agent.id).all()
+        students_count = len(students)
         total_commission = db.session.query(db.func.sum(Student.agent_commission_amount)).filter_by(agent_id=agent.id).scalar() or 0
         agents_stats.append({
             'agent': agent,
+            'students': students,
             'students_count': students_count,
             'total_commission': total_commission
         })
 
-    return render_template('students/agents_list.html', agents_stats=agents_stats)
+    return render_template('students/agents_list.html',
+                         agents_stats=agents_stats,
+                         search=search,
+                         status_filter=status_filter)
 
 # إضافة وكيل جديد
 @app.route('/add_agent', methods=['GET', 'POST'])
@@ -2064,11 +2048,22 @@ def add_agent():
     """إضافة وكيل جديد"""
     if request.method == 'POST':
         try:
+            commission_type = request.form.get('commission_type', 'percentage')
+            commission_percentage = 0.0
+            commission_fixed = 0.0
+
+            if commission_type == 'percentage':
+                commission_percentage = float(request.form.get('commission_percentage', 5.0))
+            else:
+                commission_fixed = float(request.form.get('commission_fixed', 0.0))
+
             agent = Agent(
                 name=request.form.get('name').strip(),
                 phone=request.form.get('phone', '').strip() or None,
                 email=request.form.get('email', '').strip() or None,
-                commission_percentage=float(request.form.get('commission_percentage', 5.0)),
+                commission_type=commission_type,
+                commission_percentage=commission_percentage,
+                commission_fixed=commission_fixed,
                 address=request.form.get('address', '').strip() or None,
                 notes=request.form.get('notes', '').strip() or None,
                 status=request.form.get('status', 'نشط')
@@ -2077,8 +2072,7 @@ def add_agent():
             db.session.add(agent)
             db.session.commit()
 
-            # إضافة نشاط
-            add_activity(f"تم إضافة وكيل جديد: {agent.name}")
+            # تم إضافة الوكيل بنجاح
 
             flash('تم إضافة الوكيل بنجاح!', 'success')
             return redirect(url_for('agents_list'))
@@ -2109,8 +2103,7 @@ def edit_agent(agent_id):
 
             db.session.commit()
 
-            # إضافة نشاط
-            add_activity(f"تم تعديل بيانات الوكيل: {agent.name}")
+            # تم تعديل الوكيل بنجاح
 
             flash('تم تحديث بيانات الوكيل بنجاح!', 'success')
             return redirect(url_for('agents_list'))
@@ -2119,7 +2112,20 @@ def edit_agent(agent_id):
             db.session.rollback()
             flash(f'خطأ في تحديث بيانات الوكيل: {str(e)}', 'error')
 
-    return render_template('students/edit_agent.html', agent=agent)
+    # حساب إحصائيات الوكيل
+    total_students = Student.query.filter_by(agent_id=agent.id).count()
+    active_students = Student.query.filter_by(agent_id=agent.id, status='نشط').count()
+    total_fees = db.session.query(db.func.sum(Student.tuition_fees)).filter_by(agent_id=agent.id).scalar() or 0
+    total_commission = db.session.query(db.func.sum(Student.agent_commission_amount)).filter_by(agent_id=agent.id).scalar() or 0
+
+    agent_stats = {
+        'total_students': total_students,
+        'active_students': active_students,
+        'total_fees': total_fees,
+        'total_commission': total_commission
+    }
+
+    return render_template('students/edit_agent.html', agent=agent, agent_stats=agent_stats)
 
 # حذف وكيل
 @app.route('/delete_agent/<int:agent_id>', methods=['POST'])
@@ -2140,8 +2146,7 @@ def delete_agent(agent_id):
         db.session.delete(agent)
         db.session.commit()
 
-        # إضافة نشاط
-        add_activity(f"تم حذف الوكيل: {agent_name}")
+        # تم حذف الوكيل بنجاح
 
         flash('تم حذف الوكيل بنجاح!', 'success')
     except Exception as e:
@@ -2149,6 +2154,44 @@ def delete_agent(agent_id):
         flash(f'خطأ في حذف الوكيل: {str(e)}', 'error')
 
     return redirect(url_for('agents_list'))
+
+# تصدير بيانات الوكلاء
+@app.route('/export_agents')
+@login_required
+@admin_required
+def export_agents():
+    """تصدير بيانات الوكلاء إلى CSV"""
+    import csv
+    from io import StringIO
+    from flask import make_response
+
+    agents = Agent.query.order_by(Agent.name).all()
+
+    output = StringIO()
+    writer = csv.writer(output)
+
+    # كتابة العناوين
+    writer.writerow(['الاسم', 'الهاتف', 'البريد الإلكتروني', 'نسبة العمولة', 'العنوان', 'الحالة', 'تاريخ الإنشاء'])
+
+    # كتابة البيانات
+    for agent in agents:
+        writer.writerow([
+            agent.name,
+            agent.phone or '',
+            agent.email or '',
+            f"{agent.commission_percentage}%",
+            agent.address or '',
+            agent.status,
+            agent.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        ])
+
+    output.seek(0)
+
+    response = make_response(output.getvalue())
+    response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    response.headers['Content-Disposition'] = 'attachment; filename=agents_export.csv'
+
+    return response
 
 # صفحة اختبار الحقول الجديدة
 @app.route('/test_agent_fields')
@@ -2160,7 +2203,7 @@ def test_agent_fields_page():
 if __name__ == '__main__':
     create_database()
     create_default_users()
-    add_sample_data()
+    # add_sample_data()  # معطل مؤقتاً للسماح بإضافة البيانات يدوياً
 
     # تشغيل التطبيق
     port = int(os.environ.get('PORT', 5001))
