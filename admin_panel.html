@@ -1,0 +1,475 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة الإدارة - خالد سوفت{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+    }
+    .admin-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    .admin-card .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 1.5rem;
+    }
+    .stat-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    .quick-action-btn {
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border: none;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    .quick-action-btn:hover {
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="mb-2">
+                    <i class="fas fa-crown text-warning me-2"></i>
+                    لوحة الإدارة المتقدمة
+                </h1>
+                <p class="text-muted">خالد سوفت - نظام إدارة الشبكات المتكامل</p>
+            </div>
+            <div>
+                <span class="badge bg-success fs-6 px-3 py-2">
+                    <i class="fas fa-circle me-1"></i>
+                    النظام نشط
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- إحصائيات سريعة -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-number" id="totalUsers">-</div>
+            <div>إجمالي المستخدمين</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="stat-number" id="activeUsers">-</div>
+            <div>المستخدمون المتصلون</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <div class="stat-number" id="systemUptime">-</div>
+            <div>وقت التشغيل</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+            <div class="stat-number" id="cpuUsage">-</div>
+            <div>استخدام المعالج</div>
+        </div>
+    </div>
+</div>
+
+<!-- إجراءات سريعة -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="admin-card card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    إجراءات سريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <button class="btn btn-primary quick-action-btn w-100" onclick="showCreateUserModal()">
+                            <i class="fas fa-user-plus fa-2x mb-2"></i><br>
+                            إنشاء مستخدم جديد
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('bulk_users_page') }}" class="btn btn-success quick-action-btn w-100">
+                            <i class="fas fa-users fa-2x mb-2"></i><br>
+                            إنشاء مستخدمين بالجملة
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('users_management_page') }}" class="btn btn-warning quick-action-btn w-100">
+                            <i class="fas fa-users-cog fa-2x mb-2"></i><br>
+                            إدارة المستخدمين
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('user_permissions_page') }}" class="btn btn-warning quick-action-btn w-100">
+                            <i class="fas fa-user-shield fa-2x mb-2"></i><br>
+                            إدارة الصلاحيات
+                        </a>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <a href="{{ url_for('reports_page') }}" class="btn btn-info quick-action-btn w-100">
+                            <i class="fas fa-chart-bar fa-2x mb-2"></i><br>
+                            التقارير والإحصائيات
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{{ url_for('settings_page') }}" class="btn btn-secondary quick-action-btn w-100">
+                            <i class="fas fa-cog fa-2x mb-2"></i><br>
+                            إعدادات النظام
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- معلومات النظام -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="admin-card card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-server me-2"></i>
+                    معلومات النظام
+                </h5>
+            </div>
+            <div class="card-body" id="systemInfo">
+                <div class="loading text-center">
+                    <i class="fas fa-spinner fa-spin me-2"></i>
+                    جاري التحميل...
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="admin-card card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    استخدام الموارد
+                </h5>
+            </div>
+            <div class="card-body" id="resourceUsage">
+                <div class="loading text-center">
+                    <i class="fas fa-spinner fa-spin me-2"></i>
+                    جاري التحميل...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- نموذج إنشاء مستخدم -->
+<div class="modal fade" id="createUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2"></i>
+                    إنشاء مستخدم جديد
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createUserForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">اسم المستخدم</label>
+                        <input type="text" class="form-control" id="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">كلمة المرور</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="password" required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="generatePassword()">
+                                <i class="fas fa-random"></i> توليد
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="userType" class="form-label">نوع المستخدم</label>
+                        <select class="form-select" id="userType" onchange="toggleUserTypeFields()">
+                            <option value="ppp">PPP User</option>
+                            <option value="hotspot">Hotspot User</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="profile" class="form-label">الملف الشخصي</label>
+                        <select class="form-select" id="profile">
+                            <option value="default">افتراضي</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="hotspotServerField" style="display: none;">
+                        <label for="hotspotServer" class="form-label">خادم Hotspot</label>
+                        <select class="form-select" id="hotspotServer">
+                            <option value="all">جميع الخوادم</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="localAddress" class="form-label">العنوان المحلي</label>
+                                <input type="text" class="form-control" id="localAddress" placeholder="اختياري">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="remoteAddress" class="form-label">العنوان البعيد</label>
+                                <input type="text" class="form-control" id="remoteAddress" placeholder="اختياري">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="createUser()">
+                    <i class="fas fa-plus me-1"></i>
+                    إنشاء المستخدم
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    loadDashboardData();
+    loadProfiles();
+    
+    // تحديث البيانات كل 30 ثانية
+    setInterval(loadDashboardData, 30000);
+});
+
+function loadDashboardData() {
+    // تحميل الإحصائيات
+    Promise.all([
+        $.get('/api/ppp-secrets'),
+        $.get('/api/active-users'),
+        $.get('/api/system-resources')
+    ]).then(function(responses) {
+        const [secretsResponse, activeResponse, resourcesResponse] = responses;
+        
+        // إجمالي المستخدمين
+        if (secretsResponse.success) {
+            $('#totalUsers').text(secretsResponse.data.length);
+        }
+        
+        // المستخدمون المتصلون
+        if (activeResponse.success) {
+            $('#activeUsers').text(activeResponse.count);
+        }
+        
+        // موارد النظام
+        if (resourcesResponse.success) {
+            const resources = resourcesResponse.data;
+            $('#systemUptime').text(resources.uptime || '-');
+            $('#cpuUsage').text(resources.cpu_load || '0%');
+            
+            // معلومات النظام
+            $('#systemInfo').html(`
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <strong>اسم الجهاز:</strong> ${resources.board_name || 'غير معروف'}
+                    </div>
+                    <div class="col-12 mb-3">
+                        <strong>إصدار RouterOS:</strong> ${resources.version || 'غير معروف'}
+                    </div>
+                    <div class="col-12 mb-3">
+                        <strong>المعمارية:</strong> ${resources.architecture || 'غير معروف'}
+                    </div>
+                    <div class="col-12">
+                        <strong>وقت التشغيل:</strong> ${resources.uptime || 'غير معروف'}
+                    </div>
+                </div>
+            `);
+            
+            // استخدام الموارد
+            const memoryUsed = resources.total_memory - resources.free_memory;
+            const memoryPercent = ((memoryUsed / resources.total_memory) * 100).toFixed(1);
+            const diskUsed = resources.total_hdd_space - resources.free_hdd_space;
+            const diskPercent = ((diskUsed / resources.total_hdd_space) * 100).toFixed(1);
+            
+            $('#resourceUsage').html(`
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>استخدام الذاكرة</span>
+                        <span>${memoryPercent}%</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: ${memoryPercent}%"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>استخدام القرص</span>
+                        <span>${diskPercent}%</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-info" style="width: ${diskPercent}%"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="d-flex justify-content-between">
+                        <span>استخدام المعالج</span>
+                        <span>${resources.cpu_load || '0%'}</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-warning" style="width: ${resources.cpu_load || '0%'}"></div>
+                    </div>
+                </div>
+            `);
+        }
+    }).catch(function() {
+        console.error('فشل في تحميل بيانات لوحة التحكم');
+    });
+}
+
+function loadProfiles() {
+    // تحميل ملفات PPP
+    $.get('/api/ppp-profiles')
+        .done(function(response) {
+            if (response.success) {
+                const profileSelect = $('#profile');
+                profileSelect.empty();
+                response.data.forEach(function(profile) {
+                    profileSelect.append(`<option value="${profile.name}">${profile.name}</option>`);
+                });
+            }
+        });
+
+    // تحميل خوادم Hotspot
+    $.get('/api/hotspot-servers')
+        .done(function(response) {
+            if (response.success) {
+                const serverSelect = $('#hotspotServer');
+                serverSelect.empty();
+                serverSelect.append('<option value="all">جميع الخوادم</option>');
+                response.data.forEach(function(server) {
+                    serverSelect.append(`<option value="${server.name}">${server.name}</option>`);
+                });
+            }
+        });
+}
+
+function toggleUserTypeFields() {
+    const userType = $('#userType').val();
+    const hotspotFields = $('#hotspotServerField');
+
+    if (userType === 'hotspot') {
+        hotspotFields.show();
+        // تحميل ملفات Hotspot
+        $.get('/api/hotspot-profiles')
+            .done(function(response) {
+                if (response.success) {
+                    const profileSelect = $('#profile');
+                    profileSelect.empty();
+                    response.data.forEach(function(profile) {
+                        profileSelect.append(`<option value="${profile.name}">${profile.name}</option>`);
+                    });
+                }
+            });
+    } else {
+        hotspotFields.hide();
+        // تحميل ملفات PPP
+        $.get('/api/ppp-profiles')
+            .done(function(response) {
+                if (response.success) {
+                    const profileSelect = $('#profile');
+                    profileSelect.empty();
+                    response.data.forEach(function(profile) {
+                        profileSelect.append(`<option value="${profile.name}">${profile.name}</option>`);
+                    });
+                }
+            });
+    }
+}
+
+function showCreateUserModal() {
+    $('#createUserModal').modal('show');
+}
+
+function generatePassword() {
+    const length = 8;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let password = "";
+    for (let i = 0; i < length; i++) {
+        password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    $('#password').val(password);
+}
+
+function createUser() {
+    const userType = $('#userType').val();
+    const userData = {
+        username: $('#username').val().trim(),
+        password: $('#password').val().trim(),
+        profile: $('#profile').val()
+    };
+
+    if (userType === 'hotspot') {
+        userData.server = $('#hotspotServer').val();
+    } else {
+        userData.local_address = $('#localAddress').val().trim();
+        userData.remote_address = $('#remoteAddress').val().trim();
+    }
+
+    if (!userData.username || !userData.password) {
+        alert('اسم المستخدم وكلمة المرور مطلوبان');
+        return;
+    }
+
+    const apiUrl = userType === 'hotspot' ? '/api/create-hotspot-user' : '/api/create-user';
+
+    $.ajax({
+        url: apiUrl,
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(userData),
+        success: function(response) {
+            if (response.success) {
+                alert(`تم إنشاء مستخدم ${userType.toUpperCase()} بنجاح!`);
+                $('#createUserModal').modal('hide');
+                $('#createUserForm')[0].reset();
+                loadDashboardData();
+            } else {
+                alert('فشل في إنشاء المستخدم: ' + response.error);
+            }
+        },
+        error: function() {
+            alert('خطأ في الاتصال بالخادم');
+        }
+    });
+}
+</script>
+{% endblock %}

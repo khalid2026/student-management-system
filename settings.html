@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+
+{% block title %}الإعدادات - إدارة MikroTik{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-cog me-2"></i>
+            إعدادات الاتصال
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-server me-2"></i>
+                    إعدادات MikroTik
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('update_settings') }}" id="settingsForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="host" class="form-label"><strong>عنوان IP:</strong></label>
+                                <input type="text" class="form-control" id="host" name="host"
+                                       value="{{ config.host }}" required
+                                       placeholder="مثال: 192.168.1.1">
+                                <div class="form-text">عنوان IP الخاص بجهاز MikroTik</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="port" class="form-label"><strong>منفذ API:</strong></label>
+                                <input type="number" class="form-control" id="port" name="port"
+                                       value="{{ config.port }}" required min="1" max="65535"
+                                       placeholder="8728">
+                                <div class="form-text">منفذ API (افتراضي: 8728)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="username" class="form-label"><strong>اسم المستخدم:</strong></label>
+                                <input type="text" class="form-control" id="username" name="username"
+                                       value="{{ config.username }}" required
+                                       placeholder="admin">
+                                <div class="form-text">اسم المستخدم للدخول إلى MikroTik</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="password" class="form-label"><strong>كلمة المرور:</strong></label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="password" name="password"
+                                           value="{{ config.password }}" required
+                                           placeholder="كلمة المرور">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassword()">
+                                        <i class="fas fa-eye" id="passwordIcon"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">كلمة المرور للدخول إلى MikroTik</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>تحذير:</strong> تأكد من صحة البيانات قبل الحفظ. سيتم اختبار الاتصال تلقائياً.
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-secondary me-md-2" onclick="resetForm()">
+                            <i class="fas fa-undo me-1"></i>
+                            إعادة تعيين
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>
+                            حفظ الإعدادات
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>
+                    أدوات الاختبار
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('test_connection') }}" class="btn btn-primary">
+                        <i class="fas fa-plug me-2"></i>
+                        اختبار الاتصال
+                    </a>
+                    
+                    <button class="btn btn-info" onclick="checkAPIPort()">
+                        <i class="fas fa-search me-2"></i>
+                        فحص منفذ API
+                    </button>
+                    
+                    <button class="btn btn-warning" onclick="showConnectionHelp()">
+                        <i class="fas fa-question-circle me-2"></i>
+                        مساعدة الاتصال
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>
+                    إحصائيات سريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="quick-stats">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin me-2"></i>
+                        جاري التحميل...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Connection Help Modal -->
+<div class="modal fade" id="connectionHelpModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-question-circle me-2"></i>
+                    مساعدة الاتصال بـ MikroTik
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6><i class="fas fa-exclamation-triangle text-warning me-2"></i>مشاكل الاتصال الشائعة:</h6>
+                
+                <div class="accordion" id="helpAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#help1">
+                                1. تفعيل API في MikroTik
+                            </button>
+                        </h2>
+                        <div id="help1" class="accordion-collapse collapse show" data-bs-parent="#helpAccordion">
+                            <div class="accordion-body">
+                                <p>في Winbox، اذهب إلى:</p>
+                                <code>IP → Services → API</code>
+                                <p class="mt-2">تأكد من أن الخدمة <strong>مفعلة</strong> والمنفذ هو <strong>8728</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help2">
+                                2. إعدادات Firewall
+                            </button>
+                        </h2>
+                        <div id="help2" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                            <div class="accordion-body">
+                                <p>تأكد من أن المنفذ 8728 مسموح في:</p>
+                                <code>IP → Firewall → Filter Rules</code>
+                                <p class="mt-2">أو أضف قاعدة للسماح بالاتصال من عنوان IP الخاص بك</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#help3">
+                                3. Port Forwarding
+                            </button>
+                        </h2>
+                        <div id="help3" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                            <div class="accordion-body">
+                                <p>إذا كان الخادم خلف NAT، أضف Port Forwarding:</p>
+                                <code>IP → Firewall → NAT</code>
+                                <p class="mt-2">وجه المنفذ 8728 إلى الخادم الداخلي</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    loadQuickStats();
+});
+
+function loadQuickStats() {
+    // تحميل إحصائيات سريعة
+    Promise.all([
+        $.get('/api/active-users'),
+        $.get('/api/interfaces'),
+        $.get('/api/system-info')
+    ]).then(function(responses) {
+        const [usersResponse, interfacesResponse, systemResponse] = responses;
+        
+        let html = '<div class="row text-center">';
+        
+        if (usersResponse.success) {
+            html += `
+                <div class="col-12 mb-2">
+                    <i class="fas fa-users text-primary"></i>
+                    <strong>${usersResponse.count}</strong> مستخدم متصل
+                </div>
+            `;
+        }
+        
+        if (interfacesResponse.success) {
+            const activeInterfaces = interfacesResponse.data.filter(iface => iface.running);
+            html += `
+                <div class="col-12 mb-2">
+                    <i class="fas fa-network-wired text-success"></i>
+                    <strong>${activeInterfaces.length}</strong> واجهة نشطة
+                </div>
+            `;
+        }
+        
+        if (systemResponse.success && systemResponse.data.uptime) {
+            html += `
+                <div class="col-12 mb-2">
+                    <i class="fas fa-clock text-info"></i>
+                    وقت التشغيل: <strong>${systemResponse.data.uptime}</strong>
+                </div>
+            `;
+        }
+        
+        html += '</div>';
+        $('#quick-stats').html(html);
+        
+    }).catch(function() {
+        $('#quick-stats').html(`
+            <div class="text-center text-muted">
+                <i class="fas fa-exclamation-triangle"></i>
+                <br>فشل في تحميل الإحصائيات
+            </div>
+        `);
+    });
+}
+
+function checkAPIPort() {
+    // محاولة فحص منفذ API
+    const host = '{{ config.host }}';
+    const port = '{{ config.port }}';
+    
+    const modal = new bootstrap.Modal(document.getElementById('connectionHelpModal'));
+    modal.show();
+}
+
+function showConnectionHelp() {
+    const modal = new bootstrap.Modal(document.getElementById('connectionHelpModal'));
+    modal.show();
+}
+
+function togglePassword() {
+    const passwordField = document.getElementById('password');
+    const passwordIcon = document.getElementById('passwordIcon');
+
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        passwordIcon.className = 'fas fa-eye-slash';
+    } else {
+        passwordField.type = 'password';
+        passwordIcon.className = 'fas fa-eye';
+    }
+}
+
+function resetForm() {
+    if (confirm('هل أنت متأكد من إعادة تعيين النموذج؟')) {
+        document.getElementById('settingsForm').reset();
+    }
+}
+
+// التحقق من صحة النموذج قبل الإرسال
+document.getElementById('settingsForm').addEventListener('submit', function(e) {
+    const host = document.getElementById('host').value.trim();
+    const port = document.getElementById('port').value.trim();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+
+    if (!host || !port || !username || !password) {
+        e.preventDefault();
+        alert('جميع الحقول مطلوبة!');
+        return false;
+    }
+
+    if (isNaN(port) || port < 1 || port > 65535) {
+        e.preventDefault();
+        alert('المنفذ يجب أن يكون رقم بين 1 و 65535');
+        return false;
+    }
+
+    // تأكيد الحفظ
+    if (!confirm('هل أنت متأكد من حفظ هذه الإعدادات؟')) {
+        e.preventDefault();
+        return false;
+    }
+
+    // إظهار رسالة تحميل
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>جاري الحفظ...';
+    submitBtn.disabled = true;
+
+    // إعادة تفعيل الزر بعد 5 ثوان في حالة عدم إعادة التوجيه
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 5000);
+});
+</script>
+{% endblock %}

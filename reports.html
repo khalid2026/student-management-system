@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+
+{% block title %}التقارير والإحصائيات - خالد سوفت{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-card {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    .report-card:hover {
+        transform: translateY(-5px);
+    }
+    .report-card .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px 15px 0 0;
+        padding: 1.5rem;
+    }
+    .stat-box {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin: 1rem 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-chart-bar me-2"></i>
+            التقارير والإحصائيات
+        </h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin_panel') }}">لوحة الإدارة</a></li>
+                <li class="breadcrumb-item active">التقارير والإحصائيات</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- إحصائيات سريعة -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-box">
+            <div class="stat-number" id="totalUsersCount">-</div>
+            <div>إجمالي المستخدمين</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="stat-number" id="activeUsersCount">-</div>
+            <div>المستخدمون المتصلون</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-box" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <div class="stat-number" id="enabledUsersCount">-</div>
+            <div>المستخدمون المفعلون</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-box" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+            <div class="stat-number" id="disabledUsersCount">-</div>
+            <div>المستخدمون المعطلون</div>
+        </div>
+    </div>
+</div>
+
+<!-- تقارير مفصلة -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="report-card card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-users me-2"></i>
+                    تقرير المستخدمين
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>الملف الشخصي</th>
+                                <th>العدد</th>
+                                <th>النسبة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="profilesTable">
+                            <tr>
+                                <td colspan="3" class="text-center">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>
+                                    جاري التحميل...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-3">
+                    <button class="btn btn-primary btn-sm" onclick="exportUsersReport()">
+                        <i class="fas fa-download me-1"></i>
+                        تصدير تقرير المستخدمين
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="report-card card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-server me-2"></i>
+                    تقرير النظام
+                </h5>
+            </div>
+            <div class="card-body" id="systemReport">
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin me-2"></i>
+                    جاري التحميل...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="report-card card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    قائمة المستخدمين التفصيلية
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <input type="text" class="form-control" id="searchUsers" placeholder="البحث في المستخدمين...">
+                    </div>
+                    <div>
+                        <button class="btn btn-success" onclick="exportUsersList()">
+                            <i class="fas fa-file-excel me-1"></i>
+                            تصدير Excel
+                        </button>
+                        <button class="btn btn-danger" onclick="printUsersList()">
+                            <i class="fas fa-print me-1"></i>
+                            طباعة
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover" id="usersTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>اسم المستخدم</th>
+                                <th>الملف الشخصي</th>
+                                <th>الخدمة/الخادم</th>
+                                <th>العنوان/IP</th>
+                                <th>العنوان البعيد/MAC</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>
+                                    جاري تحميل المستخدمين...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    loadReportsData();
+    
+    // البحث في المستخدمين
+    $('#searchUsers').on('input', function() {
+        const searchTerm = $(this).val().toLowerCase();
+        $('#usersTableBody tr').each(function() {
+            const text = $(this).text().toLowerCase();
+            $(this).toggle(text.includes(searchTerm));
+        });
+    });
+});
+
+function loadReportsData() {
+    Promise.all([
+        $.get('/api/ppp-secrets'),
+        $.get('/api/hotspot-users'),
+        $.get('/api/active-users'),
+        $.get('/api/system-resources')
+    ]).then(function(responses) {
+        const [secretsResponse, hotspotResponse, activeResponse, resourcesResponse] = responses;
+        
+        if (secretsResponse.success && hotspotResponse.success) {
+            const pppUsers = secretsResponse.data;
+            const hotspotUsers = hotspotResponse.data;
+            const allUsers = [...pppUsers, ...hotspotUsers];
+            const activeUsers = activeResponse.success ? activeResponse.data : [];
+
+            // إحصائيات المستخدمين
+            const totalUsers = allUsers.length;
+            const enabledUsers = allUsers.filter(u => !u.disabled).length;
+            const disabledUsers = allUsers.filter(u => u.disabled).length;
+            const activeCount = activeUsers.length;
+            
+            $('#totalUsersCount').text(totalUsers);
+            $('#activeUsersCount').text(activeCount);
+            $('#enabledUsersCount').text(enabledUsers);
+            $('#disabledUsersCount').text(disabledUsers);
+            
+            // تقرير الملفات الشخصية
+            const profileStats = {};
+            allUsers.forEach(user => {
+                const profile = user.profile || 'default';
+                profileStats[profile] = (profileStats[profile] || 0) + 1;
+            });
+            
+            let profilesHtml = '';
+            Object.entries(profileStats).forEach(([profile, count]) => {
+                const percentage = ((count / totalUsers) * 100).toFixed(1);
+                profilesHtml += `
+                    <tr>
+                        <td>${profile}</td>
+                        <td>${count}</td>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar" style="width: ${percentage}%">${percentage}%</div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            $('#profilesTable').html(profilesHtml);
+            
+            // قائمة المستخدمين التفصيلية
+            let usersHtml = '';
+            allUsers.forEach((user, index) => {
+                const statusClass = user.disabled ? 'text-danger' : 'text-success';
+                const statusText = user.disabled ? 'معطل' : 'نشط';
+                const statusIcon = user.disabled ? 'ban' : 'check-circle';
+                const userType = user.service ? 'PPP' : 'Hotspot';
+                const typeClass = user.service ? 'bg-primary' : 'bg-warning';
+
+                usersHtml += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>
+                            <strong>${user.name}</strong>
+                            <br><span class="badge ${typeClass}">${userType}</span>
+                        </td>
+                        <td><span class="badge bg-secondary">${user.profile}</span></td>
+                        <td>${user.service || user.server || '-'}</td>
+                        <td><code>${user.local_address || user.address || '-'}</code></td>
+                        <td><code>${user.remote_address || user.mac_address || '-'}</code></td>
+                        <td>
+                            <i class="fas fa-${statusIcon} ${statusClass} me-1"></i>
+                            ${statusText}
+                        </td>
+                    </tr>
+                `;
+            });
+            $('#usersTableBody').html(usersHtml);
+
+            // حفظ البيانات للتصدير
+            window.usersData = allUsers;
+        }
+        
+        // تقرير النظام
+        if (resourcesResponse.success) {
+            const resources = resourcesResponse.data;
+            const memoryUsed = resources.total_memory - resources.free_memory;
+            const memoryPercent = ((memoryUsed / resources.total_memory) * 100).toFixed(1);
+            const diskUsed = resources.total_hdd_space - resources.free_hdd_space;
+            const diskPercent = ((diskUsed / resources.total_hdd_space) * 100).toFixed(1);
+            
+            $('#systemReport').html(`
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <strong>اسم الجهاز:</strong> ${resources.board_name}<br>
+                        <strong>إصدار RouterOS:</strong> ${resources.version}<br>
+                        <strong>وقت التشغيل:</strong> ${resources.uptime}
+                    </div>
+                    <div class="col-12 mb-3">
+                        <strong>استخدام الذاكرة:</strong>
+                        <div class="progress mt-1">
+                            <div class="progress-bar" style="width: ${memoryPercent}%">${memoryPercent}%</div>
+                        </div>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <strong>استخدام القرص:</strong>
+                        <div class="progress mt-1">
+                            <div class="progress-bar bg-info" style="width: ${diskPercent}%">${diskPercent}%</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <strong>استخدام المعالج:</strong> ${resources.cpu_load}
+                    </div>
+                </div>
+            `);
+        }
+    }).catch(function() {
+        console.error('فشل في تحميل بيانات التقارير');
+    });
+}
+
+function exportUsersReport() {
+    if (!window.usersData) {
+        alert('لا توجد بيانات للتصدير');
+        return;
+    }
+    
+    let content = 'تقرير المستخدمين - خالد سوفت\n';
+    content += '='.repeat(50) + '\n\n';
+    content += `تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}\n\n`;
+    
+    content += 'الإحصائيات العامة:\n';
+    content += `- إجمالي المستخدمين: ${window.usersData.length}\n`;
+    content += `- المستخدمون المفعلون: ${window.usersData.filter(u => !u.disabled).length}\n`;
+    content += `- المستخدمون المعطلون: ${window.usersData.filter(u => u.disabled).length}\n\n`;
+    
+    content += 'قائمة المستخدمين:\n';
+    content += '-'.repeat(50) + '\n';
+    
+    window.usersData.forEach((user, index) => {
+        content += `${index + 1}. ${user.name}\n`;
+        content += `   الملف الشخصي: ${user.profile}\n`;
+        content += `   الخدمة: ${user.service}\n`;
+        content += `   الحالة: ${user.disabled ? 'معطل' : 'نشط'}\n\n`;
+    });
+    
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'users_report.txt';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function exportUsersList() {
+    if (!window.usersData) {
+        alert('لا توجد بيانات للتصدير');
+        return;
+    }
+    
+    // إنشاء CSV
+    let csv = 'اسم المستخدم,الملف الشخصي,الخدمة,العنوان المحلي,العنوان البعيد,الحالة\n';
+    
+    window.usersData.forEach(user => {
+        csv += `"${user.name}","${user.profile}","${user.service}","${user.local_address || ''}","${user.remote_address || ''}","${user.disabled ? 'معطل' : 'نشط'}"\n`;
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'users_list.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function printUsersList() {
+    if (!window.usersData) {
+        alert('لا توجد بيانات للطباعة');
+        return;
+    }
+    
+    const printWindow = window.open('', '_blank');
+    let printContent = `
+        <html dir="rtl">
+        <head>
+            <title>قائمة المستخدمين - خالد سوفت</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .header { text-align: center; margin-bottom: 30px; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+                th { background-color: #f2f2f2; }
+                .status-active { color: green; }
+                .status-disabled { color: red; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>خالد سوفت - نظام إدارة الشبكات</h1>
+                <h2>قائمة المستخدمين</h2>
+                <p>تاريخ الطباعة: ${new Date().toLocaleDateString('ar-SA')}</p>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>اسم المستخدم</th>
+                        <th>الملف الشخصي</th>
+                        <th>الخدمة</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    window.usersData.forEach((user, index) => {
+        const statusClass = user.disabled ? 'status-disabled' : 'status-active';
+        const statusText = user.disabled ? 'معطل' : 'نشط';
+        
+        printContent += `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${user.name}</td>
+                <td>${user.profile}</td>
+                <td>${user.service}</td>
+                <td class="${statusClass}">${statusText}</td>
+            </tr>
+        `;
+    });
+    
+    printContent += `
+                </tbody>
+            </table>
+        </body>
+        </html>
+    `;
+    
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,914 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة المستخدمين - إدارة MikroTik{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-users-cog me-2"></i>
+            إدارة المستخدمين المتقدمة
+        </h1>
+    </div>
+</div>
+
+<!-- Tabs Navigation -->
+<ul class="nav nav-tabs mb-4" id="userTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active-users" 
+                type="button" role="tab">
+            <i class="fas fa-wifi me-1"></i>
+            المستخدمون المتصلون
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="ppp-tab" data-bs-toggle="tab" data-bs-target="#ppp-users"
+                type="button" role="tab">
+            <i class="fas fa-users me-1"></i>
+            مستخدمو PPP
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="hotspot-tab" data-bs-toggle="tab" data-bs-target="#hotspot-users"
+                type="button" role="tab">
+            <i class="fas fa-wifi me-1"></i>
+            مستخدمو Hotspot
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="userTabsContent">
+    <!-- Active Users Tab -->
+    <div class="tab-pane fade show active" id="active-users" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">المستخدمون المتصلون حالياً</h5>
+                <div>
+                    <button class="btn btn-success btn-sm me-2" onclick="refreshActiveUsers()">
+                        <i class="fas fa-sync-alt me-1"></i>
+                        تحديث
+                    </button>
+                    <span class="badge bg-primary" id="activeUsersCount">0</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="active-users-table">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin me-2"></i>
+                        جاري تحميل المستخدمين المتصلين...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PPP Users Tab -->
+    <div class="tab-pane fade" id="ppp-users" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">جميع مستخدمي PPP</h5>
+                <div>
+                    <button class="btn btn-success btn-sm me-2" onclick="refreshPPPUsers()">
+                        <i class="fas fa-sync-alt me-1"></i>
+                        تحديث
+                    </button>
+                    <span class="badge bg-info" id="pppUsersCount">0</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="ppp-users-table">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin me-2"></i>
+                        جاري تحميل مستخدمي PPP...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hotspot Users Tab -->
+    <div class="tab-pane fade" id="hotspot-users" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">جميع مستخدمي Hotspot</h5>
+                <div>
+                    <button class="btn btn-success btn-sm me-2" onclick="refreshHotspotUsers()">
+                        <i class="fas fa-sync-alt me-1"></i>
+                        تحديث
+                    </button>
+                    <span class="badge bg-warning" id="hotspotUsersCount">0</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="hotspot-users-table">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin me-2"></i>
+                        جاري تحميل مستخدمي Hotspot...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Details Modal -->
+<div class="modal fade" id="userDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user me-2"></i>
+                    تفاصيل المستخدم
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="userDetailsContent">
+                <!-- سيتم ملؤها بـ JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Password Modal -->
+<div class="modal fade" id="editPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-key me-2"></i>
+                    تعديل كلمة المرور
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editPasswordForm">
+                    <input type="hidden" id="editUserId">
+                    <div class="mb-3">
+                        <label for="editUsername" class="form-label">اسم المستخدم</label>
+                        <input type="text" class="form-control" id="editUsername" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newPassword" class="form-label">كلمة المرور الجديدة</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="newPassword" required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="generateNewPassword()">
+                                <i class="fas fa-random"></i> توليد
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" onclick="toggleNewPassword()">
+                                <i class="fas fa-eye" id="newPasswordIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="updatePassword()">
+                    <i class="fas fa-save me-1"></i>
+                    حفظ كلمة المرور
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تأكيد الإجراء</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="confirmMessage">
+                <!-- سيتم ملؤها بـ JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-danger" id="confirmAction">تأكيد</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    loadActiveUsers();
+    
+    // تحديث كل 30 ثانية للمستخدمين المتصلين
+    setInterval(function() {
+        if ($('#active-tab').hasClass('active')) {
+            loadActiveUsers();
+        }
+    }, 30000);
+    
+    // تحميل مستخدمي PPP عند النقر على التبويب
+    $('#ppp-tab').on('click', function() {
+        loadPPPUsers();
+    });
+
+    // تحميل مستخدمي Hotspot عند النقر على التبويب
+    $('#hotspot-tab').on('click', function() {
+        loadHotspotUsers();
+    });
+});
+
+function loadActiveUsers() {
+    $.get('/api/active-users')
+        .done(function(response) {
+            if (response.success) {
+                displayActiveUsers(response.data);
+                $('#activeUsersCount').text(response.count);
+            } else {
+                $('#active-users-table').html(`
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        خطأ في تحميل المستخدمين: ${response.error}
+                    </div>
+                `);
+            }
+        })
+        .fail(function() {
+            $('#active-users-table').html(`
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    فشل في الاتصال بالخادم
+                </div>
+            `);
+        });
+}
+
+function displayActiveUsers(users) {
+    if (users.length === 0) {
+        $('#active-users-table').html(`
+            <div class="text-center py-4">
+                <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">لا يوجد مستخدمون متصلون حالياً</h5>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>المستخدم</th>
+                        <th>عنوان IP</th>
+                        <th>النوع</th>
+                        <th>وقت الاتصال</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    users.forEach(function(user, index) {
+        const typeIcon = user.type === 'PPP' ? 'fas fa-link' : 'fas fa-wifi';
+        const typeClass = user.type === 'PPP' ? 'text-primary' : 'text-success';
+        
+        html += `
+            <tr>
+                <td>
+                    <i class="${typeIcon} ${typeClass} me-2"></i>
+                    <strong>${user.name}</strong>
+                </td>
+                <td><code>${user.address}</code></td>
+                <td>
+                    <span class="badge bg-${user.type === 'PPP' ? 'primary' : 'success'}">
+                        ${user.type}
+                    </span>
+                </td>
+                <td>${user.uptime}</td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-info" onclick="showUserDetails('${user.name}', 'active')" 
+                                title="عرض التفاصيل">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                        <button class="btn btn-warning" onclick="disconnectUser('${index}', '${user.type.toLowerCase()}')" 
+                                title="قطع الاتصال">
+                            <i class="fas fa-unlink"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    $('#active-users-table').html(html);
+}
+
+function loadPPPUsers() {
+    $('#ppp-users-table').html(`
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin me-2"></i>
+            جاري تحميل مستخدمي PPP...
+        </div>
+    `);
+    
+    $.get('/api/ppp-secrets')
+        .done(function(response) {
+            if (response.success) {
+                displayPPPUsers(response.data);
+                $('#pppUsersCount').text(response.data.length);
+            } else {
+                $('#ppp-users-table').html(`
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        خطأ في تحميل مستخدمي PPP: ${response.error}
+                    </div>
+                `);
+            }
+        })
+        .fail(function() {
+            $('#ppp-users-table').html(`
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    فشل في الاتصال بالخادم
+                </div>
+            `);
+        });
+}
+
+function displayPPPUsers(users) {
+    if (users.length === 0) {
+        $('#ppp-users-table').html(`
+            <div class="text-center py-4">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">لا يوجد مستخدمو PPP</h5>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>اسم المستخدم</th>
+                        <th>الخدمة</th>
+                        <th>الملف الشخصي</th>
+                        <th>العنوان المحلي</th>
+                        <th>العنوان البعيد</th>
+                        <th>الحالة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    users.forEach(function(user) {
+        const statusClass = user.disabled ? 'text-danger' : 'text-success';
+        const statusIcon = user.disabled ? 'fas fa-ban' : 'fas fa-check-circle';
+        const statusText = user.disabled ? 'معطل' : 'نشط';
+        
+        html += `
+            <tr class="${user.disabled ? 'table-secondary' : ''}">
+                <td><strong>${user.name}</strong></td>
+                <td><span class="badge bg-info">${user.service}</span></td>
+                <td>${user.profile}</td>
+                <td><code>${user.local_address || '-'}</code></td>
+                <td><code>${user.remote_address || '-'}</code></td>
+                <td>
+                    <i class="${statusIcon} ${statusClass} me-1"></i>
+                    ${statusText}
+                </td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-info" onclick="showUserDetails('${user.name}', 'ppp')" 
+                                title="عرض التفاصيل">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                        <button class="btn btn-${user.disabled ? 'success' : 'warning'}"
+                                onclick="toggleUser('${user.id}', '${user.disabled ? 'enable' : 'disable'}')"
+                                title="${user.disabled ? 'تفعيل' : 'تعطيل'}">
+                            <i class="fas fa-${user.disabled ? 'play' : 'pause'}"></i>
+                        </button>
+                        <button class="btn btn-secondary"
+                                onclick="editUser('${user.id}', '${user.name}')"
+                                title="تعديل كلمة المرور">
+                            <i class="fas fa-key"></i>
+                        </button>
+                        <button class="btn btn-danger"
+                                onclick="deleteUser('${user.id}', '${user.name}')"
+                                title="حذف المستخدم">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    $('#ppp-users-table').html(html);
+}
+
+function refreshActiveUsers() {
+    $('#active-users-table').html(`
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin me-2"></i>
+            جاري التحديث...
+        </div>
+    `);
+    loadActiveUsers();
+}
+
+function refreshPPPUsers() {
+    $('#ppp-users-table').html(`
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin me-2"></i>
+            جاري التحديث...
+        </div>
+    `);
+    loadPPPUsers();
+}
+
+function refreshHotspotUsers() {
+    $('#hotspot-users-table').html(`
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin me-2"></i>
+            جاري التحديث...
+        </div>
+    `);
+    loadHotspotUsers();
+}
+
+function loadHotspotUsers() {
+    $('#hotspot-users-table').html(`
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin me-2"></i>
+            جاري تحميل مستخدمي Hotspot...
+        </div>
+    `);
+
+    $.get('/api/hotspot-users')
+        .done(function(response) {
+            if (response.success) {
+                displayHotspotUsers(response.data);
+                $('#hotspotUsersCount').text(response.data.length);
+            } else {
+                $('#hotspot-users-table').html(`
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        خطأ في تحميل مستخدمي Hotspot: ${response.error}
+                    </div>
+                `);
+            }
+        })
+        .fail(function() {
+            $('#hotspot-users-table').html(`
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    فشل في الاتصال بالخادم
+                </div>
+            `);
+        });
+}
+
+function disconnectUser(userId, userType) {
+    $('#confirmMessage').html(`
+        <p>هل أنت متأكد من قطع اتصال هذا المستخدم؟</p>
+        <p class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i> 
+        سيتم قطع الاتصال فوراً ولن يتمكن المستخدم من الوصول للإنترنت.</p>
+    `);
+    
+    $('#confirmAction').off('click').on('click', function() {
+        $.ajax({
+            url: '/api/disconnect-user',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                user_id: userId,
+                user_type: userType
+            }),
+            success: function(response) {
+                if (response.success) {
+                    showAlert('تم قطع اتصال المستخدم بنجاح', 'success');
+                    loadActiveUsers();
+                } else {
+                    showAlert('فشل في قطع اتصال المستخدم: ' + response.error, 'danger');
+                }
+            },
+            error: function() {
+                showAlert('خطأ في الاتصال بالخادم', 'danger');
+            }
+        });
+        
+        $('#confirmModal').modal('hide');
+    });
+    
+    $('#confirmModal').modal('show');
+}
+
+function toggleUser(userId, action) {
+    const actionText = action === 'enable' ? 'تفعيل' : 'تعطيل';
+    
+    $('#confirmMessage').html(`
+        <p>هل أنت متأكد من ${actionText} هذا المستخدم؟</p>
+    `);
+    
+    $('#confirmAction').off('click').on('click', function() {
+        $.ajax({
+            url: '/api/toggle-user',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                user_id: userId,
+                action: action
+            }),
+            success: function(response) {
+                if (response.success) {
+                    showAlert(response.message, 'success');
+                    loadPPPUsers();
+                } else {
+                    showAlert('فشل في تنفيذ الإجراء: ' + response.error, 'danger');
+                }
+            },
+            error: function() {
+                showAlert('خطأ في الاتصال بالخادم', 'danger');
+            }
+        });
+        
+        $('#confirmModal').modal('hide');
+    });
+    
+    $('#confirmModal').modal('show');
+}
+
+function showUserDetails(username, type) {
+    $('#userDetailsContent').html(`
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin me-2"></i>
+            جاري تحميل تفاصيل المستخدم...
+        </div>
+    `);
+    
+    $('#userDetailsModal').modal('show');
+    
+    if (type === 'active') {
+        $.get(`/api/user-traffic/${username}`)
+            .done(function(response) {
+                if (response.success) {
+                    const traffic = response.data;
+                    $('#userDetailsContent').html(`
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-download me-1"></i> البيانات المستلمة:</h6>
+                                <p class="h5 text-success">${formatBytes(traffic.bytes_in || 0)}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-upload me-1"></i> البيانات المرسلة:</h6>
+                                <p class="h5 text-info">${formatBytes(traffic.bytes_out || 0)}</p>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-arrow-down me-1"></i> الحزم المستلمة:</h6>
+                                <p>${traffic.packets_in || 0}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-arrow-up me-1"></i> الحزم المرسلة:</h6>
+                                <p>${traffic.packets_out || 0}</p>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-12">
+                                <h6><i class="fas fa-clock me-1"></i> وقت الاتصال:</h6>
+                                <p>${traffic.uptime || 'غير معروف'}</p>
+                            </div>
+                        </div>
+                    `);
+                } else {
+                    $('#userDetailsContent').html(`
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            لا توجد تفاصيل متاحة لهذا المستخدم
+                        </div>
+                    `);
+                }
+            })
+            .fail(function() {
+                $('#userDetailsContent').html(`
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        فشل في تحميل تفاصيل المستخدم
+                    </div>
+                `);
+            });
+    } else {
+        $('#userDetailsContent').html(`
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                تفاصيل مستخدمي PPP غير متاحة حالياً
+            </div>
+        `);
+    }
+}
+
+function showAlert(message, type) {
+    const alert = $(`
+        <div class="alert alert-${type} alert-dismissible fade show">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `);
+    
+    $('main').prepend(alert);
+    
+    setTimeout(function() {
+        alert.alert('close');
+    }, 5000);
+}
+
+function editUser(userId, username) {
+    $('#editUserId').val(userId);
+    $('#editUsername').val(username);
+    $('#newPassword').val('');
+    $('#editPasswordModal').modal('show');
+
+    // تعيين نوع المستخدم كـ PPP
+    window.currentUserType = 'ppp';
+}
+
+function generateNewPassword() {
+    const length = 8;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let password = "";
+    for (let i = 0; i < length; i++) {
+        password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    $('#newPassword').val(password);
+}
+
+function toggleNewPassword() {
+    const passwordField = $('#newPassword');
+    const icon = $('#newPasswordIcon');
+
+    if (passwordField.attr('type') === 'password') {
+        passwordField.attr('type', 'text');
+        icon.removeClass('fa-eye').addClass('fa-eye-slash');
+    } else {
+        passwordField.attr('type', 'password');
+        icon.removeClass('fa-eye-slash').addClass('fa-eye');
+    }
+}
+
+function updatePassword() {
+    const userId = $('#editUserId').val();
+    const newPassword = $('#newPassword').val().trim();
+    const userType = window.currentUserType || 'ppp';
+
+    if (!newPassword) {
+        alert('كلمة المرور الجديدة مطلوبة');
+        return;
+    }
+
+    const apiUrl = userType === 'hotspot' ? '/api/update-hotspot-password' : '/api/update-password';
+
+    $.ajax({
+        url: apiUrl,
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            user_id: userId,
+            new_password: newPassword
+        }),
+        success: function(response) {
+            if (response.success) {
+                showAlert('تم تحديث كلمة المرور بنجاح', 'success');
+                $('#editPasswordModal').modal('hide');
+
+                // تحديث القائمة المناسبة
+                if (userType === 'hotspot') {
+                    loadHotspotUsers();
+                } else {
+                    loadPPPUsers();
+                }
+            } else {
+                showAlert('فشل في تحديث كلمة المرور: ' + response.error, 'danger');
+            }
+        },
+        error: function() {
+            showAlert('خطأ في الاتصال بالخادم', 'danger');
+        }
+    });
+}
+
+function deleteUser(userId, username) {
+    $('#confirmMessage').html(`
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>تحذير!</strong> هذا الإجراء لا يمكن التراجع عنه.
+        </div>
+        <p>هل أنت متأكد من حذف المستخدم <strong>${username}</strong>؟</p>
+        <p class="text-muted">سيتم حذف المستخدم نهائياً من النظام.</p>
+    `);
+
+    $('#confirmAction').off('click').on('click', function() {
+        $.ajax({
+            url: '/api/delete-user',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                user_id: userId
+            }),
+            success: function(response) {
+                if (response.success) {
+                    showAlert('تم حذف المستخدم بنجاح', 'success');
+                    loadPPPUsers();
+                } else {
+                    showAlert('فشل في حذف المستخدم: ' + response.error, 'danger');
+                }
+            },
+            error: function() {
+                showAlert('خطأ في الاتصال بالخادم', 'danger');
+            }
+        });
+
+        $('#confirmModal').modal('hide');
+    });
+
+    $('#confirmModal').modal('show');
+}
+
+function displayHotspotUsers(users) {
+    if (users.length === 0) {
+        $('#hotspot-users-table').html(`
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle me-2"></i>
+                لا يوجد مستخدمو Hotspot
+            </div>
+        `);
+        return;
+    }
+
+    let tableHtml = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>اسم المستخدم</th>
+                        <th>الملف الشخصي</th>
+                        <th>الخادم</th>
+                        <th>العنوان</th>
+                        <th>MAC Address</th>
+                        <th>الحالة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    users.forEach(function(user) {
+        const statusClass = user.disabled ? 'text-danger' : 'text-success';
+        const statusText = user.disabled ? 'معطل' : 'نشط';
+        const statusIcon = user.disabled ? 'ban' : 'check-circle';
+
+        tableHtml += `
+            <tr>
+                <td>
+                    <strong>${user.name}</strong>
+                    ${user.comment ? `<br><small class="text-muted">${user.comment}</small>` : ''}
+                </td>
+                <td><span class="badge bg-secondary">${user.profile}</span></td>
+                <td><span class="badge bg-info">${user.server}</span></td>
+                <td><code>${user.address || '-'}</code></td>
+                <td><code>${user.mac_address || '-'}</code></td>
+                <td>
+                    <i class="fas fa-${statusIcon} ${statusClass} me-1"></i>
+                    ${statusText}
+                </td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-${user.disabled ? 'success' : 'warning'}"
+                                onclick="toggleHotspotUser('${user.id}', '${user.disabled ? 'enable' : 'disable'}')"
+                                title="${user.disabled ? 'تفعيل' : 'تعطيل'}">
+                            <i class="fas fa-${user.disabled ? 'play' : 'pause'}"></i>
+                        </button>
+                        <button class="btn btn-secondary"
+                                onclick="editHotspotUser('${user.id}', '${user.name}')"
+                                title="تعديل كلمة المرور">
+                            <i class="fas fa-key"></i>
+                        </button>
+                        <button class="btn btn-danger"
+                                onclick="deleteHotspotUser('${user.id}', '${user.name}')"
+                                title="حذف المستخدم">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+
+    tableHtml += `
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    $('#hotspot-users-table').html(tableHtml);
+}
+
+function toggleHotspotUser(userId, action) {
+    $.ajax({
+        url: '/api/toggle-hotspot-user',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            user_id: userId,
+            action: action
+        }),
+        success: function(response) {
+            if (response.success) {
+                showAlert(response.message, 'success');
+                loadHotspotUsers();
+            } else {
+                showAlert('فشل في تنفيذ الإجراء: ' + response.error, 'danger');
+            }
+        },
+        error: function() {
+            showAlert('خطأ في الاتصال بالخادم', 'danger');
+        }
+    });
+}
+
+function editHotspotUser(userId, username) {
+    $('#editUserId').val(userId);
+    $('#editUsername').val(username);
+    $('#newPassword').val('');
+    $('#editPasswordModal').modal('show');
+
+    // تعديل وظيفة التحديث لتدعم Hotspot
+    window.currentUserType = 'hotspot';
+}
+
+function deleteHotspotUser(userId, username) {
+    $('#confirmMessage').html(`
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>تحذير!</strong> هذا الإجراء لا يمكن التراجع عنه.
+        </div>
+        <p>هل أنت متأكد من حذف مستخدم Hotspot <strong>${username}</strong>؟</p>
+        <p class="text-muted">سيتم حذف المستخدم نهائياً من النظام.</p>
+    `);
+
+    $('#confirmAction').off('click').on('click', function() {
+        $.ajax({
+            url: '/api/delete-hotspot-user',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                user_id: userId
+            }),
+            success: function(response) {
+                if (response.success) {
+                    showAlert('تم حذف مستخدم Hotspot بنجاح', 'success');
+                    loadHotspotUsers();
+                } else {
+                    showAlert('فشل في حذف مستخدم Hotspot: ' + response.error, 'danger');
+                }
+            },
+            error: function() {
+                showAlert('خطأ في الاتصال بالخادم', 'danger');
+            }
+        });
+
+        $('#confirmModal').modal('hide');
+    });
+
+    $('#confirmModal').modal('show');
+}
+
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+</script>
+{% endblock %}

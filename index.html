@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}الرئيسية - إدارة MikroTik{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="mb-2">
+                    <i class="fas fa-crown text-warning me-2"></i>
+                    خالد سوفت
+                </h1>
+                <p class="text-muted mb-0">نظام إدارة الشبكات المتكامل</p>
+            </div>
+            <div>
+                <a href="{{ url_for('admin_panel') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-crown me-2"></i>
+                    لوحة الإدارة المتقدمة
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Info Card -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-server me-2"></i>
+                    معلومات النظام
+                </h5>
+            </div>
+            <div class="card-body" id="system-info">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin me-2"></i>
+                    جاري التحميل...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                <h4 class="card-title" id="users-count">-</h4>
+                <p class="card-text">المستخدمون المتصلون</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-network-wired fa-2x text-success mb-2"></i>
+                <h4 class="card-title" id="interfaces-count">-</h4>
+                <p class="card-text">الواجهات النشطة</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-globe fa-2x text-info mb-2"></i>
+                <h4 class="card-title" id="ip-count">-</h4>
+                <p class="card-text">عناوين IP</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                <h4 class="card-title" id="uptime">-</h4>
+                <p class="card-text">وقت التشغيل</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    إجراءات سريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <a href="{{ url_for('admin_panel') }}" class="btn btn-primary w-100 py-3">
+                            <i class="fas fa-crown fa-2x mb-2"></i><br>
+                            <strong>لوحة الإدارة المتقدمة</strong><br>
+                            <small>إدارة شاملة للنظام</small>
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <a href="{{ url_for('bulk_users_page') }}" class="btn btn-success w-100 py-3">
+                            <i class="fas fa-magic fa-2x mb-2"></i><br>
+                            <strong>إنشاء مستخدمين بالجملة</strong><br>
+                            <small>إنشاء مئات المستخدمين</small>
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <a href="{{ url_for('users_management_page') }}" class="btn btn-danger w-100 py-3">
+                            <i class="fas fa-users-cog fa-2x mb-2"></i><br>
+                            <strong>إدارة المستخدمين</strong><br>
+                            <small>تحكم كامل في المستخدمين</small>
+                        </a>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('users_page') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-eye me-2"></i>
+                            عرض المتصلين
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('network_page') }}" class="btn btn-outline-success w-100">
+                            <i class="fas fa-sitemap me-2"></i>
+                            إعدادات الشبكة
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('settings_page') }}" class="btn btn-outline-warning w-100">
+                            <i class="fas fa-cog me-2"></i>
+                            الإعدادات
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-info w-100" onclick="refreshData()">
+                            <i class="fas fa-sync-alt me-2"></i>
+                            تحديث البيانات
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    loadSystemInfo();
+    loadStats();
+    
+    // تحديث البيانات كل 30 ثانية
+    setInterval(function() {
+        loadStats();
+    }, 30000);
+});
+
+function loadSystemInfo() {
+    $.get('/api/system-info')
+        .done(function(response) {
+            if (response.success) {
+                const data = response.data;
+                $('#system-info').html(`
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>اسم الجهاز:</strong> ${data['board-name'] || 'غير معروف'}<br>
+                            <strong>إصدار RouterOS:</strong> ${data.version || 'غير معروف'}<br>
+                            <strong>المعمارية:</strong> ${data.architecture || 'غير معروف'}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>الذاكرة المستخدمة:</strong> ${formatBytes(data['total-memory'] - data['free-memory'])} / ${formatBytes(data['total-memory'])}<br>
+                            <strong>مساحة القرص:</strong> ${formatBytes(data['total-hdd-space'] - data['free-hdd-space'])} / ${formatBytes(data['total-hdd-space'])}<br>
+                            <strong>المعالج:</strong> ${data.cpu || 'غير معروف'}
+                        </div>
+                    </div>
+                `);
+                
+                // تحديث وقت التشغيل
+                $('#uptime').text(data.uptime || '-');
+            } else {
+                $('#system-info').html(`
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        خطأ في تحميل معلومات النظام: ${response.error}
+                    </div>
+                `);
+            }
+        })
+        .fail(function() {
+            $('#system-info').html(`
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    فشل في الاتصال بالخادم
+                </div>
+            `);
+        });
+}
+
+function loadStats() {
+    // تحميل عدد المستخدمين
+    $.get('/api/active-users')
+        .done(function(response) {
+            if (response.success) {
+                $('#users-count').text(response.count);
+            }
+        });
+    
+    // تحميل عدد الواجهات
+    $.get('/api/interfaces')
+        .done(function(response) {
+            if (response.success) {
+                const activeInterfaces = response.data.filter(iface => iface.running && !iface.disabled);
+                $('#interfaces-count').text(activeInterfaces.length);
+            }
+        });
+    
+    // تحميل عدد عناوين IP
+    $.get('/api/ip-addresses')
+        .done(function(response) {
+            if (response.success) {
+                $('#ip-count').text(response.data.length);
+            }
+        });
+}
+
+function refreshData() {
+    loadSystemInfo();
+    loadStats();
+    
+    // إظهار رسالة نجاح
+    const alert = $(`
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check me-2"></i>
+            تم تحديث البيانات بنجاح
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `);
+    
+    $('main').prepend(alert);
+    
+    // إخفاء الرسالة بعد 3 ثوان
+    setTimeout(function() {
+        alert.alert('close');
+    }, 3000);
+}
+
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+</script>
+{% endblock %}

@@ -1,0 +1,664 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة الصلاحيات - خالد سوفت{% endblock %}
+
+{% block extra_css %}
+<style>
+    .permission-card {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    .permission-card:hover {
+        transform: translateY(-5px);
+    }
+    .permission-card .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px 15px 0 0;
+        padding: 1.5rem;
+    }
+    .speed-input {
+        border-radius: 8px;
+        border: 2px solid #e9ecef;
+        transition: border-color 0.3s;
+    }
+    .speed-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    .user-info-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-user-cog me-2"></i>
+            إدارة صلاحيات المستخدمين
+        </h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin_panel') }}">لوحة الإدارة</a></li>
+                <li class="breadcrumb-item active">إدارة الصلاحيات</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="permission-card card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-search me-2"></i>
+                    البحث عن المستخدم
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="searchType" class="form-label">نوع البحث</label>
+                    <select class="form-select" id="searchType" onchange="toggleSearchFields()">
+                        <option value="username">بحث بالاسم</option>
+                        <option value="profile">بحث بالملف الشخصي</option>
+                        <option value="comment">بحث بالتعليق</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3" id="usernameSearch">
+                    <label for="searchUsername" class="form-label">اسم المستخدم</label>
+                    <input type="text" class="form-control" id="searchUsername" placeholder="أدخل اسم المستخدم">
+                </div>
+                
+                <div class="mb-3" id="profileSearch" style="display: none;">
+                    <label for="searchProfile" class="form-label">الملف الشخصي</label>
+                    <select class="form-select" id="searchProfile">
+                        <option value="">اختر الملف الشخصي</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3" id="commentSearch" style="display: none;">
+                    <label for="searchComment" class="form-label">التعليق</label>
+                    <input type="text" class="form-control" id="searchComment" placeholder="أدخل نص التعليق">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="userTypeFilter" class="form-label">نوع المستخدم</label>
+                    <select class="form-select" id="userTypeFilter">
+                        <option value="both">جميع الأنواع</option>
+                        <option value="ppp">PPP فقط</option>
+                        <option value="hotspot">Hotspot فقط</option>
+                    </select>
+                </div>
+                
+                <div class="d-grid">
+                    <button class="btn btn-primary" onclick="searchUsers()">
+                        <i class="fas fa-search me-1"></i>
+                        بحث
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="permission-card card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-users me-2"></i>
+                    نتائج البحث
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="searchResults">
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-search fa-3x mb-3"></i>
+                        <h5>ابحث عن المستخدمين</h5>
+                        <p>استخدم نموذج البحث لإيجاد المستخدمين وإدارة صلاحياتهم</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- نموذج تعديل الصلاحيات -->
+<div class="modal fade" id="permissionsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-cog me-2"></i>
+                    إدارة صلاحيات المستخدم
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="userInfoDisplay"></div>
+                
+                <form id="permissionsForm">
+                    <input type="hidden" id="editUserId">
+                    <input type="hidden" id="editUserType">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="mb-3">
+                                <i class="fas fa-tachometer-alt me-2"></i>
+                                حدود السرعة
+                            </h6>
+                            <div class="mb-3">
+                                <label for="uploadSpeed" class="form-label">سرعة الرفع (Kbps)</label>
+                                <input type="number" class="form-control speed-input" id="uploadSpeed" 
+                                       placeholder="مثال: 1024">
+                                <div class="form-text">اتركه فارغاً لعدم التحديد</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="downloadSpeed" class="form-label">سرعة التحميل (Kbps)</label>
+                                <input type="number" class="form-control speed-input" id="downloadSpeed" 
+                                       placeholder="مثال: 2048">
+                                <div class="form-text">اتركه فارغاً لعدم التحديد</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="mb-3">
+                                <i class="fas fa-database me-2"></i>
+                                حدود البيانات
+                            </h6>
+                            <div class="mb-3">
+                                <label for="dataLimit" class="form-label">حد البيانات (GB)</label>
+                                <input type="number" class="form-control speed-input" id="dataLimit" 
+                                       step="0.1" placeholder="مثال: 10.5">
+                                <div class="form-text">اتركه فارغاً أو 0 لعدم التحديد</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="userComment" class="form-label">تعليق</label>
+                                <textarea class="form-control" id="userComment" rows="3" 
+                                          placeholder="أضف تعليق للمستخدم"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-success" onclick="savePermissions()">
+                    <i class="fas fa-save me-1"></i>
+                    حفظ الصلاحيات
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- نموذج طباعة المستخدم -->
+<div class="modal fade" id="printUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-print me-2"></i>
+                    طباعة بيانات المستخدم
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="includeQR" checked>
+                    <label class="form-check-label" for="includeQR">
+                        تضمين رمز QR
+                    </label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="includeDetails" checked>
+                    <label class="form-check-label" for="includeDetails">
+                        تضمين تفاصيل الصلاحيات
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="printSingleUser()">
+                    <i class="fas fa-print me-1"></i>
+                    طباعة
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script>
+$(document).ready(function() {
+    loadProfiles();
+});
+
+function loadProfiles() {
+    // تحميل ملفات PPP
+    $.get('/api/ppp-profiles')
+        .done(function(response) {
+            if (response.success) {
+                const profileSelect = $('#searchProfile');
+                profileSelect.empty();
+                profileSelect.append('<option value="">جميع الملفات</option>');
+                response.data.forEach(function(profile) {
+                    profileSelect.append(`<option value="${profile.name}">${profile.name}</option>`);
+                });
+            }
+        });
+    
+    // تحميل ملفات Hotspot
+    $.get('/api/hotspot-profiles')
+        .done(function(response) {
+            if (response.success) {
+                const profileSelect = $('#searchProfile');
+                response.data.forEach(function(profile) {
+                    profileSelect.append(`<option value="${profile.name}">${profile.name} (Hotspot)</option>`);
+                });
+            }
+        });
+}
+
+function toggleSearchFields() {
+    const searchType = $('#searchType').val();
+    
+    $('#usernameSearch, #profileSearch, #commentSearch').hide();
+    
+    switch(searchType) {
+        case 'username':
+            $('#usernameSearch').show();
+            break;
+        case 'profile':
+            $('#profileSearch').show();
+            break;
+        case 'comment':
+            $('#commentSearch').show();
+            break;
+    }
+}
+
+function searchUsers() {
+    const searchType = $('#searchType').val();
+    const userType = $('#userTypeFilter').val();
+    
+    let searchPromise;
+    
+    if (searchType === 'username') {
+        const username = $('#searchUsername').val().trim();
+        if (!username) {
+            alert('أدخل اسم المستخدم للبحث');
+            return;
+        }
+        // البحث في كلا النوعين
+        searchPromise = Promise.all([
+            $.get('/api/ppp-secrets'),
+            $.get('/api/hotspot-users')
+        ]).then(function(responses) {
+            const [pppResponse, hotspotResponse] = responses;
+            let users = [];
+            
+            if (pppResponse.success && (userType === 'both' || userType === 'ppp')) {
+                const pppUsers = pppResponse.data.filter(u => 
+                    u.name.toLowerCase().includes(username.toLowerCase())
+                );
+                users = users.concat(pppUsers.map(u => ({...u, type: 'ppp'})));
+            }
+            
+            if (hotspotResponse.success && (userType === 'both' || userType === 'hotspot')) {
+                const hotspotUsers = hotspotResponse.data.filter(u => 
+                    u.name.toLowerCase().includes(username.toLowerCase())
+                );
+                users = users.concat(hotspotUsers.map(u => ({...u, type: 'hotspot'})));
+            }
+            
+            return { success: true, data: users };
+        });
+        
+    } else if (searchType === 'profile') {
+        const profile = $('#searchProfile').val();
+        if (!profile) {
+            alert('اختر الملف الشخصي للبحث');
+            return;
+        }
+        searchPromise = $.get(`/api/users-by-profile/${profile}/${userType}`);
+        
+    } else if (searchType === 'comment') {
+        const comment = $('#searchComment').val().trim();
+        if (!comment) {
+            alert('أدخل نص التعليق للبحث');
+            return;
+        }
+        searchPromise = $.ajax({
+            url: '/api/users-by-comment',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                comment: comment,
+                user_type: userType
+            })
+        });
+    }
+    
+    searchPromise.then(function(response) {
+        if (response.success) {
+            displaySearchResults(response.data);
+        } else {
+            alert('خطأ في البحث: ' + response.error);
+        }
+    }).catch(function() {
+        alert('خطأ في الاتصال بالخادم');
+    });
+}
+
+function displaySearchResults(users) {
+    if (users.length === 0) {
+        $('#searchResults').html(`
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle me-2"></i>
+                لم يتم العثور على مستخدمين
+            </div>
+        `);
+        return;
+    }
+    
+    let resultsHtml = `
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6>تم العثور على ${users.length} مستخدم</h6>
+            <button class="btn btn-success btn-sm" onclick="printMultipleUsers()">
+                <i class="fas fa-print me-1"></i>
+                طباعة الكل
+            </button>
+        </div>
+        <div class="row">
+    `;
+    
+    users.forEach(function(user) {
+        const statusClass = user.disabled ? 'text-danger' : 'text-success';
+        const statusText = user.disabled ? 'معطل' : 'نشط';
+        const typeClass = user.type === 'hotspot' ? 'bg-warning' : 'bg-primary';
+        
+        resultsHtml += `
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="card-title mb-1">${user.name}</h6>
+                                <span class="badge ${typeClass}">${user.type.toUpperCase()}</span>
+                                <span class="badge bg-secondary ms-1">${user.profile}</span>
+                            </div>
+                            <span class="${statusClass}">
+                                <i class="fas fa-circle"></i> ${statusText}
+                            </span>
+                        </div>
+                        ${user.comment ? `<p class="card-text small text-muted">${user.comment}</p>` : ''}
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-primary btn-sm" 
+                                    onclick="editUserPermissions('${user.id}', '${user.type}', '${user.name}')">
+                                <i class="fas fa-cog"></i> صلاحيات
+                            </button>
+                            <button class="btn btn-info btn-sm" 
+                                    onclick="printUser('${user.id}', '${user.type}', '${user.name}')">
+                                <i class="fas fa-print"></i> طباعة
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    resultsHtml += '</div>';
+    $('#searchResults').html(resultsHtml);
+    
+    // حفظ النتائج للطباعة
+    window.searchResultsData = users;
+}
+
+function editUserPermissions(userId, userType, username) {
+    $('#editUserId').val(userId);
+    $('#editUserType').val(userType);
+    
+    // عرض معلومات المستخدم
+    $('#userInfoDisplay').html(`
+        <div class="user-info-card">
+            <h6><i class="fas fa-user me-2"></i>${username}</h6>
+            <span class="badge bg-light text-dark">${userType.toUpperCase()}</span>
+        </div>
+    `);
+    
+    // تحميل المعلومات الحالية
+    $.get(`/api/user-detailed-info/${userId}/${userType}`)
+        .done(function(response) {
+            if (response.success) {
+                const user = response.data;
+                
+                // تحليل حد السرعة
+                if (user.rate_limit) {
+                    const speeds = user.rate_limit.split('/');
+                    if (speeds.length === 2) {
+                        $('#uploadSpeed').val(speeds[0] !== '0' ? speeds[0] : '');
+                        $('#downloadSpeed').val(speeds[1] !== '0' ? speeds[1] : '');
+                    }
+                }
+                
+                // حد البيانات
+                if (user.data_limit) {
+                    const limitGB = parseInt(user.data_limit) / (1024 * 1024 * 1024);
+                    $('#dataLimit').val(limitGB.toFixed(1));
+                }
+                
+                $('#userComment').val(user.comment || '');
+            }
+        });
+    
+    $('#permissionsModal').modal('show');
+}
+
+function savePermissions() {
+    const userId = $('#editUserId').val();
+    const userType = $('#editUserType').val();
+    const uploadSpeed = $('#uploadSpeed').val().trim();
+    const downloadSpeed = $('#downloadSpeed').val().trim();
+    const dataLimit = parseFloat($('#dataLimit').val()) || 0;
+    
+    // حفظ حد السرعة
+    if (uploadSpeed || downloadSpeed) {
+        $.ajax({
+            url: '/api/set-user-speed',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                user_id: userId,
+                user_type: userType,
+                upload_speed: uploadSpeed,
+                download_speed: downloadSpeed
+            }),
+            success: function(response) {
+                if (response.success) {
+                    showAlert('تم تحديث حد السرعة بنجاح', 'success');
+                } else {
+                    showAlert('فشل في تحديث حد السرعة: ' + response.error, 'danger');
+                }
+            }
+        });
+    }
+    
+    // حفظ حد البيانات
+    if (dataLimit > 0) {
+        $.ajax({
+            url: '/api/set-user-data-limit',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                user_id: userId,
+                user_type: userType,
+                data_limit_gb: dataLimit
+            }),
+            success: function(response) {
+                if (response.success) {
+                    showAlert('تم تحديث حد البيانات بنجاح', 'success');
+                } else {
+                    showAlert('فشل في تحديث حد البيانات: ' + response.error, 'danger');
+                }
+            }
+        });
+    }
+    
+    $('#permissionsModal').modal('hide');
+}
+
+function printUser(userId, userType, username) {
+    window.currentPrintUser = { userId, userType, username };
+    $('#printUserModal').modal('show');
+}
+
+function printSingleUser() {
+    const user = window.currentPrintUser;
+    const includeQR = $('#includeQR').is(':checked');
+    const includeDetails = $('#includeDetails').is(':checked');
+    
+    // إنشاء نافذة الطباعة
+    const printWindow = window.open('', '_blank');
+    let printContent = `
+        <html dir="rtl">
+        <head>
+            <title>بيانات المستخدم - خالد سوفت</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
+                .user-card { 
+                    border: 2px solid #333; 
+                    border-radius: 10px; 
+                    padding: 20px; 
+                    margin: 20px auto; 
+                    max-width: 400px;
+                    background: #f9f9f9;
+                }
+                .username { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+                .password { font-size: 18px; font-family: monospace; background: #fff; padding: 10px; border-radius: 5px; }
+                .qr-code { margin: 20px 0; }
+                .details { text-align: right; margin-top: 20px; }
+                .logo { font-size: 20px; color: #667eea; margin-bottom: 20px; }
+            </style>
+        </head>
+        <body>
+            <div class="logo">خالد سوفت - نظام إدارة الشبكات</div>
+            <div class="user-card">
+                <div class="username">${user.username}</div>
+                <div class="password">كلمة المرور: ${user.password || 'غير متاحة'}</div>
+                ${includeQR ? '<div class="qr-code" id="qrcode"></div>' : ''}
+                ${includeDetails ? `
+                    <div class="details">
+                        <div>النوع: ${user.userType.toUpperCase()}</div>
+                        <div>تاريخ الإنشاء: ${new Date().toLocaleDateString('ar-SA')}</div>
+                    </div>
+                ` : ''}
+            </div>
+        </body>
+        </html>
+    `;
+    
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    if (includeQR) {
+        // إضافة QR Code
+        const qrText = `Username: ${user.username}\nPassword: ${user.password || 'N/A'}\nType: ${user.userType}`;
+        QRCode.toCanvas(printWindow.document.getElementById('qrcode'), qrText, function (error) {
+            if (!error) {
+                setTimeout(() => printWindow.print(), 500);
+            }
+        });
+    } else {
+        setTimeout(() => printWindow.print(), 500);
+    }
+    
+    $('#printUserModal').modal('hide');
+}
+
+function printMultipleUsers() {
+    if (!window.searchResultsData || window.searchResultsData.length === 0) {
+        alert('لا توجد بيانات للطباعة');
+        return;
+    }
+    
+    const printWindow = window.open('', '_blank');
+    let printContent = `
+        <html dir="rtl">
+        <head>
+            <title>قائمة المستخدمين - خالد سوفت</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .header { text-align: center; margin-bottom: 30px; }
+                .user-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+                .user-card { 
+                    border: 1px solid #ddd; 
+                    border-radius: 8px; 
+                    padding: 15px; 
+                    background: #f9f9f9;
+                    page-break-inside: avoid;
+                }
+                .username { font-weight: bold; font-size: 16px; }
+                .password { font-family: monospace; background: #fff; padding: 5px; border-radius: 3px; }
+                .type { color: #666; font-size: 12px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>خالد سوفت - نظام إدارة الشبكات</h1>
+                <h2>قائمة المستخدمين</h2>
+                <p>تاريخ الطباعة: ${new Date().toLocaleDateString('ar-SA')}</p>
+                <p>عدد المستخدمين: ${window.searchResultsData.length}</p>
+            </div>
+            <div class="user-grid">
+    `;
+    
+    window.searchResultsData.forEach(function(user, index) {
+        printContent += `
+            <div class="user-card">
+                <div class="username">${index + 1}. ${user.name}</div>
+                <div class="password">كلمة المرور: ${user.password || 'غير متاحة'}</div>
+                <div class="type">النوع: ${user.type.toUpperCase()} | الملف: ${user.profile}</div>
+                ${user.comment ? `<div class="type">تعليق: ${user.comment}</div>` : ''}
+            </div>
+        `;
+    });
+    
+    printContent += `
+            </div>
+        </body>
+        </html>
+    `;
+    
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+function showAlert(message, type) {
+    const alertDiv = $(`
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `);
+    
+    $('body').prepend(alertDiv);
+    
+    setTimeout(function() {
+        alertDiv.alert('close');
+    }, 5000);
+}
+</script>
+{% endblock %}

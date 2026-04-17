@@ -1,0 +1,574 @@
+{% extends "base.html" %}
+
+{% block title %}إنشاء مستخدمين بالجملة - خالد سوفت{% endblock %}
+
+{% block extra_css %}
+<style>
+    .bulk-card {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .bulk-card .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px 15px 0 0;
+        padding: 1.5rem;
+    }
+    .result-card {
+        border-radius: 10px;
+        margin-bottom: 1rem;
+    }
+    .user-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        border-left: 4px solid #007bff;
+    }
+    .user-card.success {
+        border-left-color: #28a745;
+        background: #d4edda;
+    }
+    .user-card.failed {
+        border-left-color: #dc3545;
+        background: #f8d7da;
+    }
+    .progress-container {
+        display: none;
+        margin-top: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-users me-2"></i>
+            إنشاء مستخدمين بالجملة
+        </h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin_panel') }}">لوحة الإدارة</a></li>
+                <li class="breadcrumb-item active">إنشاء مستخدمين بالجملة</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="bulk-card card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cog me-2"></i>
+                    إعدادات الإنشاء
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="bulkCreateForm">
+                    <div class="mb-3">
+                        <label for="nameType" class="form-label">نوع الأسماء</label>
+                        <select class="form-select" id="nameType" onchange="toggleNameFields()">
+                            <option value="prefix">بادئة + أرقام</option>
+                            <option value="arabic">أسماء عربية</option>
+                            <option value="custom">قائمة مخصصة</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3" id="prefixField">
+                        <label for="prefix" class="form-label">بادئة اسم المستخدم</label>
+                        <input type="text" class="form-control" id="prefix" value="user" required>
+                        <div class="form-text">مثال: user001, user002, ...</div>
+                    </div>
+
+                    <div class="mb-3" id="arabicField" style="display: none;">
+                        <label for="arabicPrefix" class="form-label">بادئة عربية</label>
+                        <select class="form-select" id="arabicPrefix">
+                            <option value="محمد">محمد</option>
+                            <option value="أحمد">أحمد</option>
+                            <option value="علي">علي</option>
+                            <option value="حسن">حسن</option>
+                            <option value="خالد">خالد</option>
+                            <option value="عبدالله">عبدالله</option>
+                            <option value="سعد">سعد</option>
+                            <option value="فهد">فهد</option>
+                            <option value="عبدالعزيز">عبدالعزيز</option>
+                            <option value="مشعل">مشعل</option>
+                        </select>
+                        <div class="form-text">سيتم إضافة أرقام: محمد001, محمد002, ...</div>
+                    </div>
+
+                    <div class="mb-3" id="customField" style="display: none;">
+                        <label for="customNames" class="form-label">قائمة الأسماء المخصصة</label>
+                        <textarea class="form-control" id="customNames" rows="5"
+                                  placeholder="أدخل اسم في كل سطر:&#10;محمد الأحمد&#10;علي السعد&#10;خالد الفهد"></textarea>
+                        <div class="form-text">اسم واحد في كل سطر</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="count" class="form-label">عدد المستخدمين</label>
+                        <input type="number" class="form-control" id="count" value="10" min="1" max="1000" required>
+                        <div class="form-text">الحد الأقصى: 1000 مستخدم</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="passwordLength" class="form-label">طول كلمة المرور</label>
+                        <input type="number" class="form-control" id="passwordLength" value="8" min="4" max="20" required>
+                        <div class="form-text">بين 4 و 20 حرف</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="userType" class="form-label">نوع المستخدم</label>
+                        <select class="form-select" id="userType" onchange="toggleBulkUserTypeFields()">
+                            <option value="ppp">PPP Users</option>
+                            <option value="hotspot">Hotspot Users</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="profile" class="form-label">الملف الشخصي</label>
+                        <select class="form-select" id="profile">
+                            <option value="default">افتراضي</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3" id="bulkHotspotServerField" style="display: none;">
+                        <label for="bulkHotspotServer" class="form-label">خادم Hotspot</label>
+                        <select class="form-select" id="bulkHotspotServer">
+                            <option value="all">جميع الخوادم</option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-magic me-2"></i>
+                            إنشاء المستخدمين
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="progress-container">
+                    <div class="text-center mb-2">
+                        <span id="progressText">جاري الإنشاء...</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             id="progressBar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- معاينة -->
+        <div class="bulk-card card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-eye me-2"></i>
+                    معاينة
+                </h6>
+            </div>
+            <div class="card-body">
+                <div id="preview">
+                    <small class="text-muted">أدخل الإعدادات لرؤية المعاينة</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="bulk-card card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    النتائج
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="results">
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-users fa-3x mb-3"></i>
+                        <h5>لم يتم إنشاء أي مستخدمين بعد</h5>
+                        <p>استخدم النموذج على اليسار لإنشاء مستخدمين بالجملة</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    loadProfiles();
+    updatePreview();
+    
+    // تحديث المعاينة عند تغيير الإعدادات
+    $('#prefix, #count, #passwordLength, #arabicPrefix, #customNames').on('input', updatePreview);
+});
+
+function loadProfiles() {
+    // تحميل ملفات PPP
+    $.get('/api/ppp-profiles')
+        .done(function(response) {
+            if (response.success) {
+                const profileSelect = $('#profile');
+                profileSelect.empty();
+                response.data.forEach(function(profile) {
+                    profileSelect.append(`<option value="${profile.name}">${profile.name}</option>`);
+                });
+            }
+        });
+
+    // تحميل خوادم Hotspot
+    $.get('/api/hotspot-servers')
+        .done(function(response) {
+            if (response.success) {
+                const serverSelect = $('#bulkHotspotServer');
+                serverSelect.empty();
+                serverSelect.append('<option value="all">جميع الخوادم</option>');
+                response.data.forEach(function(server) {
+                    serverSelect.append(`<option value="${server.name}">${server.name}</option>`);
+                });
+            }
+        });
+}
+
+function toggleBulkUserTypeFields() {
+    const userType = $('#userType').val();
+    const hotspotFields = $('#bulkHotspotServerField');
+
+    if (userType === 'hotspot') {
+        hotspotFields.show();
+        // تحميل ملفات Hotspot
+        $.get('/api/hotspot-profiles')
+            .done(function(response) {
+                if (response.success) {
+                    const profileSelect = $('#profile');
+                    profileSelect.empty();
+                    response.data.forEach(function(profile) {
+                        profileSelect.append(`<option value="${profile.name}">${profile.name}</option>`);
+                    });
+                }
+            });
+    } else {
+        hotspotFields.hide();
+        // تحميل ملفات PPP
+        $.get('/api/ppp-profiles')
+            .done(function(response) {
+                if (response.success) {
+                    const profileSelect = $('#profile');
+                    profileSelect.empty();
+                    response.data.forEach(function(profile) {
+                        profileSelect.append(`<option value="${profile.name}">${profile.name}</option>`);
+                    });
+                }
+            });
+    }
+}
+
+function toggleNameFields() {
+    const nameType = $('#nameType').val();
+
+    $('#prefixField, #arabicField, #customField').hide();
+
+    switch(nameType) {
+        case 'prefix':
+            $('#prefixField').show();
+            break;
+        case 'arabic':
+            $('#arabicField').show();
+            break;
+        case 'custom':
+            $('#customField').show();
+            break;
+    }
+
+    updatePreview();
+}
+
+function updatePreview() {
+    const nameType = $('#nameType').val();
+    const count = parseInt($('#count').val()) || 10;
+    const passwordLength = parseInt($('#passwordLength').val()) || 8;
+
+    let previewHtml = '<div class="small">';
+    const maxPreview = Math.min(count, 5);
+    let usernames = [];
+
+    if (nameType === 'prefix') {
+        const prefix = $('#prefix').val() || 'user';
+        for (let i = 1; i <= maxPreview; i++) {
+            usernames.push(`${prefix}${i.toString().padStart(3, '0')}`);
+        }
+    } else if (nameType === 'arabic') {
+        const arabicPrefix = $('#arabicPrefix').val() || 'محمد';
+        for (let i = 1; i <= maxPreview; i++) {
+            usernames.push(`${arabicPrefix}${i.toString().padStart(3, '0')}`);
+        }
+    } else if (nameType === 'custom') {
+        const customNames = $('#customNames').val().split('\n').filter(name => name.trim());
+        usernames = customNames.slice(0, maxPreview);
+    }
+
+    usernames.forEach(function(username) {
+        const samplePassword = 'x'.repeat(passwordLength);
+        previewHtml += `
+            <div class="mb-1">
+                <strong>${username}</strong><br>
+                <small class="text-muted">كلمة المرور: ${samplePassword}</small>
+            </div>
+        `;
+    });
+
+    if (count > usernames.length) {
+        previewHtml += `<div class="text-muted">... و ${count - usernames.length} مستخدم آخر</div>`;
+    }
+
+    previewHtml += '</div>';
+    $('#preview').html(previewHtml);
+}
+
+$('#bulkCreateForm').on('submit', function(e) {
+    e.preventDefault();
+    
+    const userType = $('#userType').val();
+    const nameType = $('#nameType').val();
+
+    const formData = {
+        count: parseInt($('#count').val()),
+        password_length: parseInt($('#passwordLength').val()),
+        profile: $('#profile').val(),
+        user_type: userType,
+        name_type: nameType
+    };
+
+    if (nameType === 'prefix') {
+        formData.prefix = $('#prefix').val().trim();
+    } else if (nameType === 'arabic') {
+        formData.prefix = $('#arabicPrefix').val();
+    } else if (nameType === 'custom') {
+        const customNames = $('#customNames').val().split('\n').filter(name => name.trim());
+        formData.custom_names = customNames;
+        formData.count = customNames.length;
+    }
+
+    if (userType === 'hotspot') {
+        formData.server = $('#bulkHotspotServer').val();
+    }
+    
+    // التحقق من صحة البيانات
+    if (nameType === 'custom') {
+        if (!formData.custom_names || formData.custom_names.length === 0) {
+            alert('أدخل قائمة الأسماء المخصصة');
+            return;
+        }
+    } else if (!formData.prefix) {
+        alert('أدخل بادئة اسم المستخدم');
+        return;
+    }
+
+    if (formData.count < 1 || formData.count > 1000) {
+        alert('العدد يجب أن يكون بين 1 و 1000');
+        return;
+    }
+    
+    // إظهار شريط التقدم
+    $('.progress-container').show();
+    $('#progressBar').css('width', '0%');
+    $('#progressText').text('جاري الإنشاء...');
+    
+    // تعطيل النموذج
+    $('#bulkCreateForm button').prop('disabled', true);
+    
+    // محاكاة التقدم
+    let progress = 0;
+    const progressInterval = setInterval(function() {
+        progress += Math.random() * 20;
+        if (progress > 90) progress = 90;
+        $('#progressBar').css('width', progress + '%');
+    }, 200);
+    
+    $.ajax({
+        url: '/api/create-bulk-users',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(formData),
+        success: function(response) {
+            clearInterval(progressInterval);
+            $('#progressBar').css('width', '100%');
+            $('#progressText').text('تم الانتهاء!');
+            
+            if (response.success) {
+                displayResults(response);
+            } else {
+                alert('فشل في إنشاء المستخدمين: ' + response.error);
+            }
+        },
+        error: function() {
+            clearInterval(progressInterval);
+            alert('خطأ في الاتصال بالخادم');
+        },
+        complete: function() {
+            // إعادة تفعيل النموذج
+            $('#bulkCreateForm button').prop('disabled', false);
+            setTimeout(function() {
+                $('.progress-container').hide();
+            }, 2000);
+        }
+    });
+});
+
+function displayResults(response) {
+    const { data, summary } = response;
+    
+    let resultsHtml = `
+        <div class="result-card card border-success mb-3">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-check-circle me-2"></i>
+                    ملخص النتائج
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="h4 text-primary">${summary.total}</div>
+                        <small>إجمالي المطلوب</small>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="h4 text-success">${summary.success}</div>
+                        <small>تم إنشاؤها</small>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="h4 text-danger">${summary.failed}</div>
+                        <small>فشلت</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6>قائمة المستخدمين المنشأة</h6>
+            <div>
+                <button class="btn btn-sm btn-outline-primary" onclick="exportToText()">
+                    <i class="fas fa-download me-1"></i>
+                    تصدير نصي
+                </button>
+                <button class="btn btn-sm btn-outline-success" onclick="printResults()">
+                    <i class="fas fa-print me-1"></i>
+                    طباعة
+                </button>
+            </div>
+        </div>
+        
+        <div class="row">
+    `;
+    
+    data.forEach(function(user, index) {
+        const cardClass = user.status === 'تم الإنشاء' ? 'success' : 'failed';
+        const icon = user.status === 'تم الإنشاء' ? 'check-circle' : 'times-circle';
+        const iconColor = user.status === 'تم الإنشاء' ? 'success' : 'danger';
+        
+        resultsHtml += `
+            <div class="col-md-6 mb-2">
+                <div class="user-card ${cardClass}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${user.username}</strong><br>
+                            <small>كلمة المرور: <code>${user.password}</code></small><br>
+                            <small class="text-muted">الملف: ${user.profile}</small>
+                        </div>
+                        <div>
+                            <i class="fas fa-${icon} text-${iconColor}"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    resultsHtml += '</div>';
+    
+    $('#results').html(resultsHtml);
+    
+    // حفظ البيانات للتصدير
+    window.bulkUsersData = data;
+}
+
+function exportToText() {
+    if (!window.bulkUsersData) {
+        alert('لا توجد بيانات للتصدير');
+        return;
+    }
+    
+    let content = 'قائمة المستخدمين - خالد سوفت\n';
+    content += '='.repeat(40) + '\n\n';
+    
+    window.bulkUsersData.forEach(function(user, index) {
+        content += `${index + 1}. اسم المستخدم: ${user.username}\n`;
+        content += `   كلمة المرور: ${user.password}\n`;
+        content += `   الملف الشخصي: ${user.profile}\n`;
+        content += `   الحالة: ${user.status}\n\n`;
+    });
+    
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'users_list.txt';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function printResults() {
+    if (!window.bulkUsersData) {
+        alert('لا توجد بيانات للطباعة');
+        return;
+    }
+    
+    const printWindow = window.open('', '_blank');
+    let printContent = `
+        <html dir="rtl">
+        <head>
+            <title>قائمة المستخدمين - خالد سوفت</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .header { text-align: center; margin-bottom: 30px; }
+                .user-item { margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; }
+                .username { font-weight: bold; font-size: 16px; }
+                .password { font-family: monospace; background: #f5f5f5; padding: 2px 5px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>خالد سوفت - نظام إدارة الشبكات</h1>
+                <h2>قائمة المستخدمين المنشأة</h2>
+                <p>تاريخ الإنشاء: ${new Date().toLocaleDateString('ar-SA')}</p>
+            </div>
+    `;
+    
+    window.bulkUsersData.forEach(function(user, index) {
+        if (user.status === 'تم الإنشاء') {
+            printContent += `
+                <div class="user-item">
+                    <div class="username">${index + 1}. ${user.username}</div>
+                    <div>كلمة المرور: <span class="password">${user.password}</span></div>
+                    <div>الملف الشخصي: ${user.profile}</div>
+                    <div>النوع: ${user.type === 'hotspot' ? 'Hotspot' : 'PPP'}</div>
+                    ${user.server ? `<div>الخادم: ${user.server}</div>` : ''}
+                </div>
+            `;
+        }
+    });
+    
+    printContent += '</body></html>';
+    
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+}
+</script>
+{% endblock %}
